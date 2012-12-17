@@ -4,7 +4,7 @@ A [Brackets](https://github.com/adobe/brackets) extension that provides a live p
 
 ### Installation
 
-* [Download the Zip](https://github.com/gruehle/MarkdownPreview/downloads) and unzip it; or clone this repo on GitHub.
+* [Download the Zip](https://github.com/gruehle/MarkdownPreview/archive/master.zip) and unzip it; or clone this repo on GitHub.
 * From Brackets, choose _Help > Show Extensions Folder_. This will open the extensions folder.
 * Drag the unzipped (or cloned) folder into the `user` directory.
 * Restart Brackets.
