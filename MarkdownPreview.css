@@ -1,0 +1,20 @@
+/* Toolbar icon */
+#markdown-preview-icon {
+    background: url(markdown-mark.svg);
+    background-repeat: no-repeat;
+    background-position: left top;
+    background-size: 100%;
+    display: inline-block;
+    position: relative;
+    width: 18px;
+    height: 11px;
+    padding-right: 8px;
+}
+
+#panel-markdown-preview-frame {
+    position: relative;
+    left: 20px;
+    top: 20px;
+    right: 20px;
+    bottom: 20px;
+}
