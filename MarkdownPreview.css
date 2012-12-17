@@ -10,11 +10,3 @@
     height: 11px;
     padding-right: 8px;
 }
-
-#panel-markdown-preview-frame {
-    position: relative;
-    left: 20px;
-    top: 20px;
-    right: 20px;
-    bottom: 20px;
-}

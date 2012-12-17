@@ -77,7 +77,7 @@ define(function (require, exports, module) {
     
     function _resizeIframe() {
         if (visible && $iframe) {
-            var iframeWidth = $panel.innerWidth() - 40;
+            var iframeWidth = $panel.innerWidth();
             $iframe.attr("width", iframeWidth + "px");
         }
     }
@@ -97,9 +97,9 @@ define(function (require, exports, module) {
 
                 Resizer.makeResizable($panel.get(0), "vert", "top", 100, false);
                 $panel.on("panelResizeUpdate", function (e, newSize) {
-                    $iframe.attr("height", newSize - 20);
+                    $iframe.attr("height", newSize);
                 });
-                $iframe.attr("height", $panel.height() - 20);
+                $iframe.attr("height", $panel.height());
                 window.setTimeout(_resizeIframe);
             }
             _loadDoc(DocumentManager.getCurrentDocument());
