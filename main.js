@@ -103,8 +103,10 @@ define(function (require, exports, module) {
                 window.setTimeout(_resizeIframe);
             }
             _loadDoc(DocumentManager.getCurrentDocument());
+            $icon.toggleClass("active");
             $panel.show();
         } else {
+            $icon.toggleClass("active");
             $panel.hide();
         }
         EditorManager.resizeEditor();
