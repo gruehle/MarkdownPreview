@@ -48,12 +48,23 @@ define(function (require, exports, module) {
     
     // Other vars
     var currentDoc,
+        currentEditor,
         visible = false,
-        realVisibility = false;
+        realVisibility = false,
+        refreshing = false;
     
-    function _loadDoc(doc, preserveScrollPos) {
+    function _loadDoc(doc, editor, preserveScrollPos) {
         if (doc && visible && $iframe) {
-            var bodyText = marked.parse(doc.getText()),
+            var docText = doc.getText();
+            if (editor) {
+                var cursor = editor.getCursorPos(),
+                    lines = docText.split("\n"),
+                    cursorLine = lines[cursor.line];
+                lines[cursor.line] =
+                    cursorLine.slice(0, cursor.ch) + "<span id='X-MARKDOWN-CURSOR'></span>" + cursorLine.slice(cursor.ch);
+                docText = lines.join("\n");
+            }
+            var bodyText = marked.parse(docText),
                 scrollPos = 0;
             
             if (preserveScrollPos) {
@@ -64,15 +75,21 @@ define(function (require, exports, module) {
             bodyText = bodyText.replace(/href=\"([^\"]*)\"/g, "title=\"$1\"");
             var htmlSource = "<html><head>";
             htmlSource += "<link href='" + require.toUrl("./markdown.css") + "' rel='stylesheet'></link>";
-            htmlSource += "</head><body onload='document.body.scrollTop=" + scrollPos + "'>";
+            htmlSource += "</head><body onload='document.body.scrollTop=" + scrollPos + "; document.getElementById(\"X-MARKDOWN-CURSOR\").scrollIntoView();'>";
             htmlSource += bodyText;
             htmlSource += "</body></html>";
             $iframe.attr("srcdoc", htmlSource);
         }
+        refreshing = false;
     }
     
-    function _documentChange(e) {
-        _loadDoc(e.target, true);
+    function _invalidatePreview() {
+        if (!refreshing) {
+            refreshing = true;
+            window.setTimeout(function () {
+                _loadDoc(currentDoc, currentEditor, true);
+            }, 100);
+        }
     }
     
     function _resizeIframe() {
@@ -102,7 +119,7 @@ define(function (require, exports, module) {
                 $iframe.attr("height", $panel.height());
                 window.setTimeout(_resizeIframe);
             }
-            _loadDoc(DocumentManager.getCurrentDocument());
+            _loadDoc(DocumentManager.getCurrentDocument(), EditorManager.getCurrentFullEditor());
             $icon.toggleClass("active");
             $panel.show();
         } else {
@@ -117,16 +134,20 @@ define(function (require, exports, module) {
             ext = doc ? PathUtils.filenameExtension(doc.file.fullPath).toLowerCase() : "";
         
         if (currentDoc) {
-            $(currentDoc).off("change", _documentChange);
+            $(currentDoc).off("change", _invalidatePreview);
+            $(currentEditor).off("cursorActivity", _invalidatePreview);
             currentDoc = null;
+            currentEditor = null;
         }
         
         if (doc && /md|markdown/.test(ext)) {
             currentDoc = doc;
-            $(currentDoc).on("change", _documentChange);
+            currentEditor = EditorManager.getCurrentFullEditor();
+            $(currentDoc).on("change", _invalidatePreview);
+            $(currentEditor).on("cursorActivity", _invalidatePreview);
             $icon.css({display: "inline-block"});
             _setPanelVisibility(visible);
-            _loadDoc(doc);
+            _loadDoc(doc, currentEditor);
         } else {
             $icon.css({display: "none"});
             _setPanelVisibility(false);
