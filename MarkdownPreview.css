@@ -9,14 +9,13 @@
     width: 18px;
     height: 11px;
     padding-right: 8px;
-    opacity: .5;
+    opacity: .7;
 }
 
 #markdown-preview-icon.active {
-    background: url(markdown-mark-black.svg);    
-    background-size: 100%;
+    opacity: .9;
 }
 
 #markdown-preview-icon:hover {
-	opacity: .75;
+	opacity: .5;
 }
