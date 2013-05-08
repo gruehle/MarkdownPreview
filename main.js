@@ -53,23 +53,26 @@ define(function (require, exports, module) {
     
     function _loadDoc(doc, preserveScrollPos) {
         if (doc && visible && $iframe) {
-            var docText = doc.getText(),
-                scrollPos = 0,
-                bodyText = '',
-                re = /^-{3}([\w\W]+?)(-{3})/,
-                yamlRay = re.exec(docText);
+            var docText     = doc.getText(),
+                scrollPos   = 0,
+                bodyText    = "",
+                yamlRegEx   = /^-{3}([\w\W]+?)(-{3})/,
+                yamlMatch   = yamlRegEx.exec(docText);
 
             // If there's yaml front matter, remove it.
-            if (yamlRay !== null && yamlRay.length > 0) {
-                docText = docText.substr(yamlRay[0].length, docText.length);
+            if (yamlMatch) {
+                docText = docText.substr(yamlMatch[0].length);
             }
             
             if (preserveScrollPos) {
                 scrollPos = $iframe.contents()[0].body.scrollTop;
             }
             
+            // Parse markdown into HTML
+            bodyText = marked.parse(docText);
+            
             // Remove link hrefs
-            bodyText = marked.parse(docText).replace(/href=\"([^\"]*)\"/g, "title=\"$1\"");
+            bodyText = bodyText.replace(/href=\"([^\"]*)\"/g, "title=\"$1\"");
             var htmlSource = "<html><head>";
             htmlSource += "<link href='" + require.toUrl("./markdown.css") + "' rel='stylesheet'></link>";
             htmlSource += "</head><body onload='document.body.scrollTop=" + scrollPos + "'>";
