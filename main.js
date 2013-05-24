@@ -35,6 +35,7 @@ define(function (require, exports, module) {
         ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
         FileUtils           = brackets.getModule("file/FileUtils"),
         NativeFileSystem    = brackets.getModule("file/NativeFileSystem").NativeFileSystem,
+        PanelManager        = brackets.getModule("view/PanelManager"),
         Resizer             = brackets.getModule("utils/Resizer"),
         StringUtils         = brackets.getModule("utils/StringUtils");
 
@@ -43,11 +44,11 @@ define(function (require, exports, module) {
     
     // jQuery objects
     var $icon,
-        $iframe,
-        $panel;
+        $iframe;
     
     // Other vars
     var currentDoc,
+        panel,
         visible = false,
         realVisibility = false;
     
@@ -88,7 +89,7 @@ define(function (require, exports, module) {
     
     function _resizeIframe() {
         if (visible && $iframe) {
-            var iframeWidth = $panel.innerWidth();
+            var iframeWidth = panel.$panel.innerWidth();
             $iframe.attr("width", iframeWidth + "px");
         }
     }
@@ -100,27 +101,25 @@ define(function (require, exports, module) {
         
         realVisibility = isVisible;
         if (isVisible) {
-            if (!$panel) {
-                $panel = $(panelHTML);
+            if (!panel) {
+                var $panel = $(panelHTML);
                 $iframe = $panel.find("#panel-markdown-preview-frame");
                 
-                $panel.insertBefore("#status-bar");
-
-                Resizer.makeResizable($panel.get(0), "vert", "top", 100, false);
+                panel = PanelManager.createBottomPanel("markdown-preview-panel", $panel);
                 $panel.on("panelResizeUpdate", function (e, newSize) {
                     $iframe.attr("height", newSize);
                 });
                 $iframe.attr("height", $panel.height());
+
                 window.setTimeout(_resizeIframe);
             }
             _loadDoc(DocumentManager.getCurrentDocument());
             $icon.toggleClass("active");
-            $panel.show();
+            panel.show();
         } else {
             $icon.toggleClass("active");
-            $panel.hide();
+            panel.hide();
         }
-        EditorManager.resizeEditor();
     }
 
     function _currentDocChangedHandler() {
@@ -173,6 +172,7 @@ define(function (require, exports, module) {
         _currentDocChangedHandler();
     });
     
-    $(window).on("resize", _resizeIframe);
-
+    // Listen for resize events
+    $(PanelManager).on("editorAreaResize", _resizeIframe);
+    $("#sidebar").on("panelCollapsed panelExpanded panelResizeUpdate", _resizeIframe);
 });
