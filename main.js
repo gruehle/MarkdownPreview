@@ -95,12 +95,6 @@ define(function (require, exports, module) {
                 
             }
             
-            if (css) {
-                NativeFileSystem.resolveNativeFileSystemPath(css,
-                      function (entry) { console.log("Path for " + entry.name + " resolved"); },
-                      function (err) { console.log("Error resolving path: " + err.name); });
-            }
-            
             if (preserveScrollPos) {
                 scrollPos = $iframe.contents()[0].body.scrollTop;
             }
