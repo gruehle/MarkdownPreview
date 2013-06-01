@@ -31,6 +31,7 @@ define(function (require, exports, module) {
     // Brackets modules
     var AppInit             = brackets.getModule("utils/AppInit"),
         DocumentManager     = brackets.getModule("document/DocumentManager"),
+        ProjectManager      = brackets.getModule("project/ProjectManager"),
         EditorManager       = brackets.getModule("editor/EditorManager"),
         ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
         FileUtils           = brackets.getModule("file/FileUtils"),
@@ -51,17 +52,53 @@ define(function (require, exports, module) {
         visible = false,
         realVisibility = false;
     
+    function _getYamlProperty(text, name) {
+        var resultRay,
+            line,
+            i,
+            property = false;
+    
+        resultRay = text.split("\n");
+        
+        for (i = 0; i < resultRay.length; i++) {
+            line = resultRay[i].split(":");
+            if (line[0].trim() === name) {
+                property = line[1].replace(/"/g, '').trim();
+            }
+        }
+        
+        return property;
+        
+    }
+    
     function _loadDoc(doc, preserveScrollPos) {
         if (doc && visible && $iframe) {
             var docText = doc.getText(),
                 scrollPos = 0,
                 bodyText = '',
                 re = /^-{3}([\w\W]+?)(-{3})/,
-                yamlRay = re.exec(docText);
+                yaml = "",
+                css = false,
+                link = "",
+                yamlRay = re.exec(docText),
+                projectPath = ProjectManager.getProjectRoot().fullPath;
 
             // If there's yaml front matter, remove it.
             if (yamlRay !== null && yamlRay.length > 0) {
+                
+                // Look for a css path to apply to our markdown
+                yaml = docText.substr(0, yamlRay[0].length);
+                
+                css = _getYamlProperty(yaml, "css");
+                
                 docText = docText.substr(yamlRay[0].length, docText.length);
+                
+            }
+            
+            if (css) {
+                NativeFileSystem.resolveNativeFileSystemPath(css,
+                      function (entry) { console.log("Path for " + entry.name + " resolved"); },
+                      function (err) { console.log("Error resolving path: " + err.name); });
             }
             
             if (preserveScrollPos) {
@@ -72,6 +109,10 @@ define(function (require, exports, module) {
             bodyText = marked.parse(docText).replace(/href=\"([^\"]*)\"/g, "title=\"$1\"");
             var htmlSource = "<html><head>";
             htmlSource += "<link href='" + require.toUrl("./markdown.css") + "' rel='stylesheet'></link>";
+            if (css) {
+                link = "<link href='" + projectPath + css + "' rel='stylesheet'></link>";
+                htmlSource += link;
+            }
             htmlSource += "</head><body onload='document.body.scrollTop=" + scrollPos + "'>";
             htmlSource += bodyText;
             htmlSource += "</body></html>";
