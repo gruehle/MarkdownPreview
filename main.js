@@ -74,7 +74,7 @@ define(function (require, exports, module) {
     
     function _loadDoc(doc, preserveScrollPos) {
         if (doc && visible && $iframe) {
-            var docText = doc.getText(),
+            var docText     = doc.getText(),
                 scrollPos   = 0,
                 bodyText    = '',
                 yamlCss     = false,
