@@ -36,6 +36,7 @@ define(function (require, exports, module) {
         ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
         FileUtils           = brackets.getModule("file/FileUtils"),
         NativeFileSystem    = brackets.getModule("file/NativeFileSystem").NativeFileSystem,
+        PanelManager        = brackets.getModule("view/PanelManager"),
         Resizer             = brackets.getModule("utils/Resizer"),
         StringUtils         = brackets.getModule("utils/StringUtils");
 
@@ -44,11 +45,11 @@ define(function (require, exports, module) {
     
     // jQuery objects
     var $icon,
-        $iframe,
-        $panel;
+        $iframe;
     
     // Other vars
     var currentDoc,
+        panel,
         visible = false,
         realVisibility = false;
     
@@ -74,38 +75,39 @@ define(function (require, exports, module) {
     function _loadDoc(doc, preserveScrollPos) {
         if (doc && visible && $iframe) {
             var docText = doc.getText(),
-                scrollPos = 0,
-                bodyText = '',
-                re = /^-{3}([\w\W]+?)(-{3})/,
-                yaml = "",
-                css = false,
-                link = "",
-                yamlRay = re.exec(docText),
+                scrollPos   = 0,
+                bodyText    = '',
+                yamlCss     = false,
+                yamlString  = '',
+                yamlRegEx   = /^-{3}([\w\W]+?)(-{3})/,
+                yamlMatch   = yamlRegEx.exec(docText),
                 projectPath = ProjectManager.getProjectRoot().fullPath;
 
             // If there's yaml front matter, remove it.
-            if (yamlRay !== null && yamlRay.length > 0) {
+            if (yamlMatch !== null && yamlMatch.length > 0) {
                 
                 // Look for a css path to apply to our markdown
-                yaml = docText.substr(0, yamlRay[0].length);
+                yamlString = docText.substr(0, yamlMatch[0].length);
                 
-                css = _getYamlProperty(yaml, "css");
+                yamlCss = _getYamlProperty(yamlString, "css");
                 
-                docText = docText.substr(yamlRay[0].length, docText.length);
-                
+                docText = docText.substr(yamlMatch[0].length, docText.length);
+
             }
             
             if (preserveScrollPos) {
                 scrollPos = $iframe.contents()[0].body.scrollTop;
             }
             
+            // Parse markdown into HTML
+            bodyText = marked.parse(docText);
+            
             // Remove link hrefs
-            bodyText = marked.parse(docText).replace(/href=\"([^\"]*)\"/g, "title=\"$1\"");
+            bodyText = bodyText.replace(/href=\"([^\"]*)\"/g, "title=\"$1\"");
             var htmlSource = "<html><head>";
             htmlSource += "<link href='" + require.toUrl("./markdown.css") + "' rel='stylesheet'></link>";
-            if (css) {
-                link = "<link href='" + projectPath + css + "' rel='stylesheet'></link>";
-                htmlSource += link;
+            if (yamlCss) {
+                htmlSource += "<link href='" + projectPath + yamlCss + "' rel='stylesheet'></link>";
             }
             htmlSource += "</head><body onload='document.body.scrollTop=" + scrollPos + "'>";
             htmlSource += bodyText;
@@ -120,7 +122,7 @@ define(function (require, exports, module) {
     
     function _resizeIframe() {
         if (visible && $iframe) {
-            var iframeWidth = $panel.innerWidth();
+            var iframeWidth = panel.$panel.innerWidth();
             $iframe.attr("width", iframeWidth + "px");
         }
     }
@@ -132,27 +134,25 @@ define(function (require, exports, module) {
         
         realVisibility = isVisible;
         if (isVisible) {
-            if (!$panel) {
-                $panel = $(panelHTML);
+            if (!panel) {
+                var $panel = $(panelHTML);
                 $iframe = $panel.find("#panel-markdown-preview-frame");
                 
-                $panel.insertBefore("#status-bar");
-
-                Resizer.makeResizable($panel.get(0), "vert", "top", 100, false);
+                panel = PanelManager.createBottomPanel("markdown-preview-panel", $panel);
                 $panel.on("panelResizeUpdate", function (e, newSize) {
                     $iframe.attr("height", newSize);
                 });
                 $iframe.attr("height", $panel.height());
+
                 window.setTimeout(_resizeIframe);
             }
             _loadDoc(DocumentManager.getCurrentDocument());
             $icon.toggleClass("active");
-            $panel.show();
+            panel.show();
         } else {
             $icon.toggleClass("active");
-            $panel.hide();
+            panel.hide();
         }
-        EditorManager.resizeEditor();
     }
 
     function _currentDocChangedHandler() {
@@ -205,6 +205,7 @@ define(function (require, exports, module) {
         _currentDocChangedHandler();
     });
     
-    $(window).on("resize", _resizeIframe);
-
+    // Listen for resize events
+    $(PanelManager).on("editorAreaResize", _resizeIframe);
+    $("#sidebar").on("panelCollapsed panelExpanded panelResizeUpdate", _resizeIframe);
 });
