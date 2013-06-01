@@ -31,6 +31,7 @@ define(function (require, exports, module) {
     // Brackets modules
     var AppInit             = brackets.getModule("utils/AppInit"),
         DocumentManager     = brackets.getModule("document/DocumentManager"),
+        ProjectManager      = brackets.getModule("project/ProjectManager"),
         EditorManager       = brackets.getModule("editor/EditorManager"),
         ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
         FileUtils           = brackets.getModule("file/FileUtils"),
@@ -52,17 +53,46 @@ define(function (require, exports, module) {
         visible = false,
         realVisibility = false;
     
+    function _getYamlProperty(text, name) {
+        var resultRay,
+            line,
+            i,
+            property = false;
+    
+        resultRay = text.split("\n");
+        
+        for (i = 0; i < resultRay.length; i++) {
+            line = resultRay[i].split(":");
+            if (line[0].trim() === name) {
+                property = line[1].replace(/"/g, '').trim();
+            }
+        }
+        
+        return property;
+        
+    }
+    
     function _loadDoc(doc, preserveScrollPos) {
         if (doc && visible && $iframe) {
             var docText     = doc.getText(),
                 scrollPos   = 0,
-                bodyText    = "",
+                bodyText    = '',
+                yamlCss     = false,
+                yamlString  = '',
                 yamlRegEx   = /^-{3}([\w\W]+?)(-{3})/,
-                yamlMatch   = yamlRegEx.exec(docText);
+                yamlMatch   = yamlRegEx.exec(docText),
+                projectPath = ProjectManager.getProjectRoot().fullPath;
 
             // If there's yaml front matter, remove it.
-            if (yamlMatch) {
-                docText = docText.substr(yamlMatch[0].length);
+            if (yamlMatch !== null && yamlMatch.length > 0) {
+                
+                // Look for a css path to apply to our markdown
+                yamlString = docText.substr(0, yamlMatch[0].length);
+                
+                yamlCss = _getYamlProperty(yamlString, "css");
+                
+                docText = docText.substr(yamlMatch[0].length, docText.length);
+
             }
             
             if (preserveScrollPos) {
@@ -76,6 +106,9 @@ define(function (require, exports, module) {
             bodyText = bodyText.replace(/href=\"([^\"]*)\"/g, "title=\"$1\"");
             var htmlSource = "<html><head>";
             htmlSource += "<link href='" + require.toUrl("./markdown.css") + "' rel='stylesheet'></link>";
+            if (yamlCss) {
+                htmlSource += "<link href='" + projectPath + yamlCss + "' rel='stylesheet'></link>";
+            }
             htmlSource += "</head><body onload='document.body.scrollTop=" + scrollPos + "'>";
             htmlSource += bodyText;
             htmlSource += "</body></html>";
