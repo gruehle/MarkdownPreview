@@ -25,8 +25,6 @@
 
 define(function (require, exports, module) {
     "use strict";
-    
-    require("marked");
 
     // Brackets modules
     var AppInit             = brackets.getModule("utils/AppInit"),
@@ -41,6 +39,7 @@ define(function (require, exports, module) {
 
     // Local modules
     var panelHTML   = require("text!panel.html");
+    var marked      = require("marked");
     
     // jQuery objects
     var $icon,
@@ -70,7 +69,7 @@ define(function (require, exports, module) {
             }
             
             // Parse markdown into HTML
-            bodyText = marked.parse(docText);
+            bodyText = marked(docText);
             
             // Remove link hrefs
             bodyText = bodyText.replace(/href=\"([^\"]*)\"/g, "title=\"$1\"");
