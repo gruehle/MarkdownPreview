@@ -131,7 +131,7 @@ define(function (require, exports, module) {
             currentDoc = null;
         }
         
-        if (doc && /md|markdown/.test(ext)) {
+        if (doc && /md|markdown|txt/.test(ext)) {
             currentDoc = doc;
             $(currentDoc).on("change", _documentChange);
             $icon.css({display: "inline-block"});
