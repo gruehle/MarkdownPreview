@@ -1,6 +1,6 @@
 /* Toolbar icon */
 #markdown-preview-icon {
-    background: url(markdown-sprite.svg);
+    background-image: url(markdown-sprite.svg);
 }
 
 #markdown-preview-icon.active {
