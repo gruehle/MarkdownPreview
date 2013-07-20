@@ -4,6 +4,6 @@
 }
 
 #markdown-preview-icon.active {
-    background-position: 0 -24px;
+    background-position: 0 -24px !important;
 }
 
