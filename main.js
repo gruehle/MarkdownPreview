@@ -133,7 +133,7 @@ define(function (require, exports, module) {
         if (doc && /md|markdown|txt/.test(ext)) {
             currentDoc = doc;
             $(currentDoc).on("change", _documentChange);
-            $icon.css({display: "inline-block"});
+            $icon.css({display: "block"});
             _setPanelVisibility(visible);
             _loadDoc(doc);
         } else {
