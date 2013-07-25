@@ -4,10 +4,10 @@ A [Brackets](https://github.com/adobe/brackets) extension that provides a live p
 
 ### Installation
 
-* [Download the Zip](https://github.com/gruehle/MarkdownPreview/archive/master.zip) and unzip it; or clone this repo on GitHub.
-* From Brackets, choose _Help > Show Extensions Folder_. This will open the extensions folder.
-* Drag the unzipped (or cloned) folder into the `user` directory.
-* Restart Brackets.
+* Select **File > Extension Manager...** (or click the "brick" icon in the toolbar)
+* Click **Install from URL...**
+* Enter the url of this repo: https://github.com/gruehle/MarkdownPreview
+* Click **Install**
 
 ### How To Use
 When a markdown document (with extension ".md" or ".markdown") is open, a markdown icon is shown in the 
