@@ -1,21 +1,9 @@
 /* Toolbar icon */
 #markdown-preview-icon {
-    background: url(markdown-mark.svg);
-    background-repeat: no-repeat;
-    background-position: left top;
-    background-size: 100%;
-    display: inline-block;
-    position: relative;
-    width: 18px;
-    height: 11px;
-    padding-right: 8px;
-    opacity: .7;
+    background-image: url(markdown-sprite.svg);
 }
 
 #markdown-preview-icon.active {
-    opacity: .9;
+    background-position: 0 -24px !important;
 }
 
-#markdown-preview-icon:hover {
-	opacity: .5;
-}
