@@ -160,7 +160,7 @@ define(function (require, exports, module) {
             display: "none"
         })
         .click(_toggleVisibility)
-        .insertAfter($("#toolbar-go-live"));
+        .appendTo($("#main-toolbar .buttons"));
     
     // Add a document change handler
     $(DocumentManager).on("currentDocumentChange", _currentDocChangedHandler);
