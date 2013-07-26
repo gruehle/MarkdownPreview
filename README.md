@@ -6,7 +6,9 @@ A [Brackets](https://github.com/adobe/brackets) extension that provides a live p
 
 * Select **File > Extension Manager...** (or click the "brick" icon in the toolbar)
 * Click **Install from URL...**
-* Enter the url of this repo: https://github.com/gruehle/MarkdownPreview
+* Enter the url of this repo: 
+ * For Brackets Sprint 27 (or earlier): https://github.com/gruehle/MarkdownPreview/archive/sprint-27.zip
+ * For Brackets Sprint 28 (or later): https://github.com/gruehle/MarkdownPreview
 * Click **Install**
 
 ### How To Use
