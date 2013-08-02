@@ -18,6 +18,12 @@ resized vertically.
 
 The preview is updated as you edit the document. You can hover over links to see the href in a tooltip.
 
+__Export to HTML__
+
+Open the context menu of the document from the file list at the left side of the Brackets window.
+Click on it in the menu because there is "Export markdown to HTML".
+HTML is generated in the same folder as the Markdown, with the same name.
+
 ### Credits
 This extension uses the following open source components:
 
