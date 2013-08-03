@@ -28,15 +28,18 @@ define(function (require, exports, module) {
 
     // Brackets modules
     var AppInit             = brackets.getModule("utils/AppInit"),
+        CommandManager      = brackets.getModule("command/CommandManager"),
         DocumentManager     = brackets.getModule("document/DocumentManager"),
         EditorManager       = brackets.getModule("editor/EditorManager"),
         ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
         FileUtils           = brackets.getModule("file/FileUtils"),
+        Menus               = brackets.getModule("command/Menus"),
         NativeFileSystem    = brackets.getModule("file/NativeFileSystem").NativeFileSystem,
         PanelManager        = brackets.getModule("view/PanelManager"),
+        ProjectManager      = brackets.getModule("project/ProjectManager"),
         Resizer             = brackets.getModule("utils/Resizer"),
         StringUtils         = brackets.getModule("utils/StringUtils");
-
+    
     // Local modules
     var panelHTML   = require("text!panel.html");
     var marked      = require("marked");
@@ -45,17 +48,26 @@ define(function (require, exports, module) {
     var $icon,
         $iframe;
     
+    // Menu objects
+    var projectMenu     = Menus.getContextMenu(Menus.ContextMenuIds.PROJECT_MENU),
+        workingsetMenu  = Menus.getContextMenu(Menus.ContextMenuIds.WORKING_SET_MENU);
+    
+    // Menu info
+    var BUILD_HTML      = "Export markdown to HTML";
+    var CMD_BUILD_HTML  = "markdown-preview.exportHtml";
+    
     // Other vars
     var currentDoc,
         panel,
         visible = false,
         realVisibility = false;
     
-    function _loadDoc(doc, preserveScrollPos) {
-        if (doc && visible && $iframe) {
-            var docText     = doc.getText(),
-                scrollPos   = 0,
-                bodyText    = "",
+    function _convetsionToHTML(docText, option) {
+        var defaultOption   = { scrollTop: null, cssEmbedded: true, removeLink: false};
+        option = $.extend(defaultOption, option);
+        
+        if (docText) {
+            var resultText    = "",
                 yamlRegEx   = /^-{3}([\w\W]+?)(-{3})/,
                 yamlMatch   = yamlRegEx.exec(docText);
 
@@ -64,21 +76,65 @@ define(function (require, exports, module) {
                 docText = docText.substr(yamlMatch[0].length);
             }
             
+            // Parse markdown into HTML
+            resultText = marked(docText);
+            
+            // Remove link hrefs
+            if (!!option.removeLink) {
+                resultText = resultText.replace(/href=\"([^\"]*)\"/g, "title=\"$1\"");
+            }
+            
+            var htmlSource = "<html><head>";
+            htmlSource += !!option.cssEmbedded ?
+                    "<style>" + require("text!markdown.css").replace(/\n/g, "") + "</style>" :
+                    "<link href='" + require.toUrl("./markdown.css") + "' rel='stylesheet'></link>";
+            htmlSource += "</head>";
+            htmlSource += typeof option.scrollTop === "number" ?
+                    "<body onload='document.body.scrollTop=" + option.scrollTop + "'>" :
+                    "<body>";
+            htmlSource += resultText;
+            htmlSource += "</body></html>";
+            
+            return htmlSource;
+        }
+    }
+    
+    function _loadDoc(doc, preserveScrollPos) {
+        if (doc && visible && $iframe) {
+            var docText     = doc.getText(),
+                scrollPos   = 0,
+                htmlSource    = "";
+            
             if (preserveScrollPos) {
                 scrollPos = $iframe.contents()[0].body.scrollTop;
             }
             
             // Parse markdown into HTML
-            bodyText = marked(docText);
+            htmlSource = _convetsionToHTML(docText, { scrollTop: scrollPos, cssEmbedded: false, removeLink: true});
             
             // Remove link hrefs
-            bodyText = bodyText.replace(/href=\"([^\"]*)\"/g, "title=\"$1\"");
-            var htmlSource = "<html><head>";
-            htmlSource += "<link href='" + require.toUrl("./markdown.css") + "' rel='stylesheet'></link>";
-            htmlSource += "</head><body onload='document.body.scrollTop=" + scrollPos + "'>";
-            htmlSource += bodyText;
-            htmlSource += "</body></html>";
             $iframe.attr("srcdoc", htmlSource);
+        }
+    }
+    
+    function _buildHTML() {
+        var entry = ProjectManager.getSelectedItem();
+        
+        if (entry !== null && entry !== undefined) {
+            var dir     = FileUtils.getDirectoryPath(entry.fullPath),
+                ext     = FileUtils.getFilenameExtension(entry.fullPath),
+                fileName = entry.name;
+            fileName = fileName.substr(0, fileName.lastIndexOf(ext)) + ".html";
+            
+            // conversion markdown to html
+            FileUtils.readAsText(entry)
+                .then(function (text) {
+                    var file = new NativeFileSystem.FileEntry(dir + fileName);
+                    
+                    // save file
+                    return FileUtils.writeText(file, _convetsionToHTML(text));
+                })
+                .then(function () { alert("Conversion success."); }, function () { alert("Conversion failed"); });
         }
     }
     
@@ -147,6 +203,17 @@ define(function (require, exports, module) {
         _setPanelVisibility(visible);
     }
     
+    function _projectContextMenuOpenHandler(menu) {
+        var entry   = ProjectManager.getSelectedItem(),
+            ext     = PathUtils.filenameExtension(entry.fullPath).toLowerCase();
+        
+        menu.removeMenuItem(CMD_BUILD_HTML);
+        
+        if (entry && /md|markdown|txt/.test(ext)) {
+            menu.addMenuItem(CMD_BUILD_HTML, "", Menus.LAST);
+        }
+    }
+    
     // Insert CSS for this extension
     ExtensionUtils.loadStyleSheet(module, "MarkdownPreview.css");
     
@@ -174,4 +241,11 @@ define(function (require, exports, module) {
     // Listen for resize events
     $(PanelManager).on("editorAreaResize", _resizeIframe);
     $("#sidebar").on("panelCollapsed panelExpanded panelResizeUpdate", _resizeIframe);
+    
+    // Add project and workingset context menu open handler
+    $(projectMenu).on("beforeContextMenuOpen", function () { _projectContextMenuOpenHandler(this); });
+    $(workingsetMenu).on("beforeContextMenuOpen", function () { _projectContextMenuOpenHandler(this); });
+    
+    // Add menu command 
+    CommandManager.register(BUILD_HTML, CMD_BUILD_HTML, _buildHTML);
 });
