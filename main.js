@@ -39,8 +39,13 @@ define(function (require, exports, module) {
 
     // Local modules
     var panelHTML   = require("text!panel.html");
-    var marked      = require("marked");
-    
+    var marked      = require("marked.min");
+    marked.setOptions({
+      tables: true,
+      breaks: true,
+      sanitize: false,
+      smartypants: true
+    });
     // jQuery objects
     var $icon,
         $iframe;
@@ -52,6 +57,7 @@ define(function (require, exports, module) {
         realVisibility = false;
     
     function _loadDoc(doc, preserveScrollPos) {
+        console.log([doc]);
         if (doc && visible && $iframe) {
             var docText     = doc.getText(),
                 scrollPos   = 0,
@@ -73,8 +79,11 @@ define(function (require, exports, module) {
             
             // Remove link hrefs
             bodyText = bodyText.replace(/href=\"([^\"]*)\"/g, "title=\"$1\"");
+            //bodyText = bodyText.replace(/src=\"([^\"]*)\"/g, "title=\"$1\"");
             var htmlSource = "<html><head>";
+            htmlSource += "<base href='" + (doc.file.fullPath.replace(/[\\\/][^\/\\]+$/g,'/')) + "'/>";
             htmlSource += "<link href='" + require.toUrl("./markdown.css") + "' rel='stylesheet'></link>";
+            htmlSource += "<link href='" + require.toUrl("./typography.css") + "' rel='stylesheet'></link>";
             htmlSource += "</head><body onload='document.body.scrollTop=" + scrollPos + "'>";
             htmlSource += bodyText;
             htmlSource += "</body></html>";
