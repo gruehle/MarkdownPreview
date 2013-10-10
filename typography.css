@@ -1,0 +1,31 @@
+/* http://arturs.jansons.id.lv
+Author: Artūrs Jansons
+License: MIT 
+v1.0 */
+a{color: inherit;}
+table {border-collapse: separate;width: 100%;}
+caption, figurecaption, th {
+  font-weight: normal;
+  text-align: left;
+  display: table-cell;
+}
+/* Full-width resources */
+img, object, video, embed {
+  max-width: 100%;
+}
+pre {
+  white-space: pre-wrap;
+  white-space: -moz-pre-wrap;
+  white-space: -pre-wrap;
+  white-space: -o-pre-wrap;
+  word-wrap: break-word;
+}
+/* Red line */
+ul, ol, p:first-letter, blockquote, blockquote:before { margin-left:1.25em;list-style-type:none;}
+ol {counter-reset: n;}
+ol li { counter-increment: n;}
+article li:before { margin-right: .5em;}
+article ol li:before{ content: counters(n, ".") ".";}
+article ul li:before { content: "*"}
+p {max-width: 80em;}
+s+sup { position:absolute; line-height:.1;padding-bottom:3em;}
