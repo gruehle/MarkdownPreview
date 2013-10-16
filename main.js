@@ -32,7 +32,6 @@ define(function (require, exports, module) {
         EditorManager       = brackets.getModule("editor/EditorManager"),
         ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
         FileUtils           = brackets.getModule("file/FileUtils"),
-        NativeFileSystem    = brackets.getModule("file/NativeFileSystem").NativeFileSystem,
         PanelManager        = brackets.getModule("view/PanelManager"),
         Resizer             = brackets.getModule("utils/Resizer"),
         StringUtils         = brackets.getModule("utils/StringUtils");
@@ -73,7 +72,13 @@ define(function (require, exports, module) {
             
             // Remove link hrefs
             bodyText = bodyText.replace(/href=\"([^\"]*)\"/g, "title=\"$1\"");
+            
+            // Make <base> tag for relative URLS
+            var baseUrl = window.location.protocol + "//" + FileUtils.getDirectoryPath(doc.file.fullPath);
+                
+            // Assemble the HTML source
             var htmlSource = "<html><head>";
+            htmlSource += "<base href='" + baseUrl + "'>";
             htmlSource += "<link href='" + require.toUrl("./markdown.css") + "' rel='stylesheet'></link>";
             htmlSource += "</head><body onload='document.body.scrollTop=" + scrollPos + "'>";
             htmlSource += bodyText;
@@ -82,8 +87,19 @@ define(function (require, exports, module) {
         }
     }
     
+    var _timer;
+    
     function _documentChange(e) {
-        _loadDoc(e.target, true);
+        // "debounce" the page updates to avoid thrashing/flickering
+        // Note: this should use Async.whenIdle() once brackets/pull/5528
+        // is merged.
+        if (_timer) {
+            window.clearTimeout(_timer);
+        }
+        _timer = window.setTimeout(function () {
+            _timer = null;
+            _loadDoc(e.target, true);
+        }, 300);
     }
     
     function _resizeIframe() {
@@ -146,6 +162,11 @@ define(function (require, exports, module) {
         visible = !visible;
         _setPanelVisibility(visible);
     }
+    
+    // Set options for marked
+    marked.setOptions({
+        breaks: true        // GFM style linebreak handling
+    });
     
     // Insert CSS for this extension
     ExtensionUtils.loadStyleSheet(module, "MarkdownPreview.css");
