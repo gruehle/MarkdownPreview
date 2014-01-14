@@ -48,7 +48,8 @@ define(function (require, exports, module) {
     var currentDoc,
         panel,
         visible = false,
-        realVisibility = false;
+        realVisibility = false,
+        useGFM = false;
     
     function _loadDoc(doc, preserveScrollPos) {
         if (doc && visible && $iframe) {
@@ -127,6 +128,19 @@ define(function (require, exports, module) {
                 $iframe.attr("height", $panel.height());
 
                 window.setTimeout(_resizeIframe);
+                
+                var $formatDropdown = $panel.find("#markdown-preview-format");
+                $formatDropdown.change(function () {
+                    useGFM = $formatDropdown[0].selectedIndex === 1;
+                    
+                    // Adjust options & re-render preview
+                    marked.setOptions({
+                        breaks: useGFM,
+                        gfm: useGFM
+                    });
+                    
+                    _loadDoc(currentDoc, true);
+                });
             }
             _loadDoc(DocumentManager.getCurrentDocument());
             $icon.toggleClass("active");
@@ -162,11 +176,6 @@ define(function (require, exports, module) {
         visible = !visible;
         _setPanelVisibility(visible);
     }
-    
-    // Set options for marked
-    marked.setOptions({
-        breaks: true        // GFM style linebreak handling
-    });
     
     // Insert CSS for this extension
     ExtensionUtils.loadStyleSheet(module, "MarkdownPreview.css");

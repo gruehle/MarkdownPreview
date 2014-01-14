@@ -18,6 +18,10 @@ resized vertically.
 
 The preview is updated as you edit the document. You can hover over links to see the href in a tooltip.
 
+By default, the document is rendered as standard Markdown. Hover over the preview area and change the
+dropdown to "GitHub-Flavored" to see the Markdown as it would appear in a GitHub issue, pull request, or
+comment.
+
 ### Credits
 This extension uses the following open source components:
 
