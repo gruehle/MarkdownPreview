@@ -28,6 +28,7 @@ define(function (require, exports, module) {
 
     // Brackets modules
     var AppInit             = brackets.getModule("utils/AppInit"),
+        NativeApp           = brackets.getModule("utils/NativeApp"),
         DocumentManager     = brackets.getModule("document/DocumentManager"),
         EditorManager       = brackets.getModule("editor/EditorManager"),
         ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
@@ -51,6 +52,23 @@ define(function (require, exports, module) {
         realVisibility = false,
         useGFM = false;
     
+    // (based on code in brackets.js)
+    function _handleLinkClick(e) {
+        // Check parents too, in case link has inline formatting tags
+        var node = e.target, url;
+        while (node) {
+            if (node.tagName === "A") {
+                url = node.getAttribute("href");
+                if (url && !url.match(/^#/)) {
+                    NativeApp.openURLInDefaultBrowser(url);
+                }
+                e.preventDefault();
+                break;
+            }
+            node = node.parentElement;
+        }
+    }
+    
     function _loadDoc(doc, preserveScrollPos) {
         if (doc && visible && $iframe) {
             var docText     = doc.getText(),
@@ -71,8 +89,8 @@ define(function (require, exports, module) {
             // Parse markdown into HTML
             bodyText = marked(docText);
             
-            // Remove link hrefs
-            bodyText = bodyText.replace(/href=\"([^\"]*)\"/g, "title=\"$1\"");
+            // Show URL in link tooltip
+            bodyText = bodyText.replace(/(href=\"([^\"]*)\")/g, "$1 title=\"$2\"");
             
             // Make <base> tag for relative URLS
             var baseUrl = window.location.protocol + "//" + FileUtils.getDirectoryPath(doc.file.fullPath);
@@ -85,6 +103,12 @@ define(function (require, exports, module) {
             htmlSource += bodyText;
             htmlSource += "</body></html>";
             $iframe.attr("srcdoc", htmlSource);
+            
+            // Open external browser when links are clicked
+            // (similar to what brackets.js does - but attached to the iframe's document)
+            $iframe.load(function () {
+                $iframe[0].contentDocument.body.addEventListener("click", _handleLinkClick, true);
+            });
         }
     }
     
