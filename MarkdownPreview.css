@@ -7,3 +7,19 @@
     background-position: 0 -24px !important;
 }
 
+#panel-markdown-preview {
+    position: relative;
+}
+
+#markdown-preview-format {
+    display: none; /* shown on rollover */
+    position: absolute;
+    top: 8px;
+    right: 21px;
+    width: auto;
+    padding: 0;
+}
+
+#panel-markdown-preview:hover #markdown-preview-format {
+    display: block;
+}

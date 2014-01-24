@@ -16,7 +16,12 @@ When a markdown document (with extension ".md" or ".markdown") is open, a markdo
 toolbar at the top of the Brackets window. Click this icon to open the preview panel. The panel can be 
 resized vertically.
 
-The preview is updated as you edit the document. You can hover over links to see the href in a tooltip.
+The preview is updated as you edit the document. You can hover over links to see the href in a tooltip,
+or click them to open in your default browser.
+
+By default, the document is rendered as standard Markdown. Hover over the preview area and change the
+dropdown to "GitHub-Flavored" to see the Markdown as it would appear in a GitHub issue, pull request, or
+comment.
 
 ### Credits
 This extension uses the following open source components:
