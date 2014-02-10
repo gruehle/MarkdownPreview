@@ -1,4 +1,4 @@
-## Markdown Preview
+# Markdown Preview
 
 A [Brackets](https://github.com/adobe/brackets) extension that provides a live preview of markdown documents. 
 

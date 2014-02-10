@@ -21,7 +21,7 @@
  */
 
 /*jslint vars: true, plusplus: true, devel: true, nomen: true,  regexp: true, indent: 4, maxerr: 50 */
-/*global define, brackets, $, window, PathUtils, marked */
+/*global define, brackets, $, window, PathUtils, marked, _hideSettings */
 
 define(function (require, exports, module) {
     "use strict";
@@ -34,23 +34,36 @@ define(function (require, exports, module) {
         ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
         FileUtils           = brackets.getModule("file/FileUtils"),
         PanelManager        = brackets.getModule("view/PanelManager"),
+        PopUpManager        = brackets.getModule("widgets/PopUpManager"),
+        PreferencesManager  = brackets.getModule("preferences/PreferencesManager"),
         Resizer             = brackets.getModule("utils/Resizer"),
         StringUtils         = brackets.getModule("utils/StringUtils");
 
+    // Templates
+    var panelHTML       = require("text!templates/panel.html"),
+        settingsHTML    = require("text!templates/settings.html");
+    
     // Local modules
-    var panelHTML   = require("text!panel.html");
-    var marked      = require("marked");
+    var marked          = require("lib/marked");
     
     // jQuery objects
     var $icon,
-        $iframe;
+        $iframe,
+        $panel,
+        $settingsToggle,
+        $settings;
     
     // Other vars
     var currentDoc,
         panel,
         visible = false,
-        realVisibility = false,
-        useGFM = false;
+        realVisibility = false;
+    
+    // Prefs
+    var _prefs = PreferencesManager.getPreferenceStorage(module, {
+        useGFM: false,
+        theme: "clean"
+    });
     
     // (based on code in brackets.js)
     function _handleLinkClick(e) {
@@ -67,6 +80,9 @@ define(function (require, exports, module) {
             }
             node = node.parentElement;
         }
+        
+        // Close settings dropdown, if open
+        _hideSettings();
     }
     
     function _loadDoc(doc, preserveScrollPos) {
@@ -97,8 +113,9 @@ define(function (require, exports, module) {
                 
             // Assemble the HTML source
             var htmlSource = "<html><head>";
+            var theme = _prefs.getValue("theme");
             htmlSource += "<base href='" + baseUrl + "'>";
-            htmlSource += "<link href='" + require.toUrl("./markdown.css") + "' rel='stylesheet'></link>";
+            htmlSource += "<link href='" + require.toUrl("./themes/" + theme + ".css") + "' rel='stylesheet'></link>";
             htmlSource += "</head><body onload='document.body.scrollTop=" + scrollPos + "'>";
             htmlSource += bodyText;
             htmlSource += "</body></html>";
@@ -134,6 +151,65 @@ define(function (require, exports, module) {
         }
     }
     
+    function _updateSettings() {
+        // Format
+        var useGFM = _prefs.getValue("useGFM");
+        marked.setOptions({
+            breaks: useGFM,
+            gfm: useGFM
+        });
+        
+        // Save preferences
+        // TODO
+        
+        // Re-render
+        _loadDoc(currentDoc, true);
+    }
+    
+    function _documentClicked(e) {
+        if (!$settings.is(e.target) &&
+                !$settingsToggle.is(e.target) &&
+                $settings.has(e.target).length === 0) {
+            _hideSettings();
+        }
+    }
+    
+    function _hideSettings() {
+        if ($settings) {
+            $settings.remove();
+            $settings = null;
+            $(window.document).off("mousedown", _documentClicked);
+        }
+    }
+    
+    function _showSettings(e) {
+        _hideSettings();
+        
+        $settings = $(settingsHTML)
+            .css({
+                right: 12,
+                top: $settingsToggle.position().top + $settingsToggle.outerHeight() + 12
+            })
+            .appendTo($panel);
+        
+        $settings.find("#markdown-preview-format")
+            .prop("selectedIndex", _prefs.getValue("useGFM") ? 1 : 0)
+            .change(function (e) {
+                _prefs.setValue("useGFM", e.target.selectedIndex === 1);
+                _updateSettings();
+            });
+        
+        $settings.find("#markdown-preview-theme")
+            .val(_prefs.getValue("theme"))
+            .change(function (e) {
+                _prefs.setValue("theme", e.target.value);
+                _updateSettings();
+            });
+        
+        PopUpManager.addPopUp($settings, _hideSettings, true);
+        $(window.document).on("mousedown", _documentClicked);
+    }
+    
     function _setPanelVisibility(isVisible) {
         if (isVisible === realVisibility) {
             return;
@@ -142,7 +218,7 @@ define(function (require, exports, module) {
         realVisibility = isVisible;
         if (isVisible) {
             if (!panel) {
-                var $panel = $(panelHTML);
+                $panel = $(panelHTML);
                 $iframe = $panel.find("#panel-markdown-preview-frame");
                 
                 panel = PanelManager.createBottomPanel("markdown-preview-panel", $panel);
@@ -153,18 +229,14 @@ define(function (require, exports, module) {
 
                 window.setTimeout(_resizeIframe);
                 
-                var $formatDropdown = $panel.find("#markdown-preview-format");
-                $formatDropdown.change(function () {
-                    useGFM = $formatDropdown[0].selectedIndex === 1;
-                    
-                    // Adjust options & re-render preview
-                    marked.setOptions({
-                        breaks: useGFM,
-                        gfm: useGFM
+                $settingsToggle = $("#markdown-settings-toggle")
+                    .click(function (e) {
+                        if ($settings) {
+                            _hideSettings();
+                        } else {
+                            _showSettings(e);
+                        }
                     });
-                    
-                    _loadDoc(currentDoc, true);
-                });
             }
             _loadDoc(DocumentManager.getCurrentDocument());
             $icon.toggleClass("active");
@@ -202,7 +274,7 @@ define(function (require, exports, module) {
     }
     
     // Insert CSS for this extension
-    ExtensionUtils.loadStyleSheet(module, "MarkdownPreview.css");
+    ExtensionUtils.loadStyleSheet(module, "styles/MarkdownPreview.css");
     
     // Add toolbar icon 
     $icon = $("<a>")
