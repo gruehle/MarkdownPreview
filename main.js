@@ -58,11 +58,16 @@ define(function (require, exports, module) {
         panel,
         visible = false,
         realVisibility = false;
-    
+
     // Prefs
-    var _prefs = PreferencesManager.getPreferenceStorage(module, {
-        useGFM: false,
-        theme: "clean"
+    var _prefs = PreferencesManager.getExtensionPrefs("markdown-preview");
+    _prefs.definePreference("useGFM", "boolean", false);
+    _prefs.definePreference("theme", "string", "clean");
+
+    // Convert any old-style prefs
+    PreferencesManager.convertPreferences(module, {
+        "useGFM": "user markdown-preview.useGFM",
+        "theme": "user markdown-preview.theme"
     });
     
     // (based on code in brackets.js)
@@ -113,7 +118,7 @@ define(function (require, exports, module) {
                 
             // Assemble the HTML source
             var htmlSource = "<html><head>";
-            var theme = _prefs.getValue("theme");
+            var theme = _prefs.get("theme");
             htmlSource += "<base href='" + baseUrl + "'>";
             htmlSource += "<link href='" + require.toUrl("./themes/" + theme + ".css") + "' rel='stylesheet'></link>";
             htmlSource += "</head><body onload='document.body.scrollTop=" + scrollPos + "'>";
@@ -153,7 +158,7 @@ define(function (require, exports, module) {
     
     function _updateSettings() {
         // Format
-        var useGFM = _prefs.getValue("useGFM");
+        var useGFM = _prefs.get("useGFM");
         marked.setOptions({
             breaks: useGFM,
             gfm: useGFM
@@ -193,16 +198,16 @@ define(function (require, exports, module) {
             .appendTo($panel);
         
         $settings.find("#markdown-preview-format")
-            .prop("selectedIndex", _prefs.getValue("useGFM") ? 1 : 0)
+            .prop("selectedIndex", _prefs.get("useGFM") ? 1 : 0)
             .change(function (e) {
-                _prefs.setValue("useGFM", e.target.selectedIndex === 1);
+                _prefs.set("useGFM", e.target.selectedIndex === 1);
                 _updateSettings();
             });
         
         $settings.find("#markdown-preview-theme")
-            .val(_prefs.getValue("theme"))
+            .val(_prefs.get("theme"))
             .change(function (e) {
-                _prefs.setValue("theme", e.target.value);
+                _prefs.set("theme", e.target.value);
                 _updateSettings();
             });
         

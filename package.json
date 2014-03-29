@@ -3,10 +3,10 @@
     "title": "Markdown Preview",
     "description": "Live preview of markdown documents",
     "homepage": "https://github.com/gruehle/MarkdownPreview",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "author": "Glenn Ruehle <gruehle@gmail.com> (http://github.com/gruehle)",
     "license": "MIT",
     "engines": {
-        "brackets": ">=0.27.0"
+        "brackets": ">=0.37.0"
     }
 }
