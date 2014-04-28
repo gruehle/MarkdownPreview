@@ -56,6 +56,7 @@ define(function (require, exports, module) {
     // Other vars
     var currentDoc,
         panel,
+        previewWindow,
         visible = false,
         realVisibility = false;
 
@@ -63,6 +64,11 @@ define(function (require, exports, module) {
     var _prefs = PreferencesManager.getExtensionPrefs("markdown-preview");
     _prefs.definePreference("useGFM", "boolean", false);
     _prefs.definePreference("theme", "string", "clean");
+    _prefs.definePreference("display", "string", "window");
+    _prefs.definePreference("window.left", "number", 40);
+    _prefs.definePreference("window.top", "number", 40);
+    _prefs.definePreference("window.width", "number", 600);
+    _prefs.definePreference("window.height", "number", 480);
 
     // Convert any old-style prefs
     PreferencesManager.convertPreferences(module, {
@@ -149,14 +155,23 @@ define(function (require, exports, module) {
         }, 300);
     }
     
-    function _resizeIframe() {
-        if (visible && $iframe) {
+    function _resizeIframePanel() {
+        if (visible && panel && $iframe) {
             var iframeWidth = panel.$panel.innerWidth();
             $iframe.attr("width", iframeWidth + "px");
         }
     }
     
+    function _resizeIframeWindow() {
+        if (visible && previewWindow && $iframe) {
+            $iframe.attr("width", previewWindow.innerWidth);
+            $iframe.attr("height", previewWindow.innerHeight);
+        }
+    }
+    
     function _updateSettings() {
+        // TODO - Display
+        
         // Format
         var useGFM = _prefs.get("useGFM");
         marked.setOptions({
@@ -221,34 +236,68 @@ define(function (require, exports, module) {
         }
         
         realVisibility = isVisible;
-        if (isVisible) {
-            if (!panel) {
-                $panel = $(panelHTML);
-                $iframe = $panel.find("#panel-markdown-preview-frame");
-                
-                panel = PanelManager.createBottomPanel("markdown-preview-panel", $panel);
-                $panel.on("panelResizeUpdate", function (e, newSize) {
-                    $iframe.attr("height", newSize);
-                });
-                $iframe.attr("height", $panel.height());
-
-                window.setTimeout(_resizeIframe);
-                
-                $settingsToggle = $("#markdown-settings-toggle")
-                    .click(function (e) {
-                        if ($settings) {
-                            _hideSettings();
-                        } else {
-                            _showSettings(e);
-                        }
-                    });
+        
+        if (_prefs.get("display") === "window") {
+            if (isVisible) {
+                previewWindow = window.open(ExtensionUtils.getModuleUrl(module, "templates/window.html"));
+                previewWindow.moveTo(
+                    _prefs.get("window.left"),
+                    _prefs.get("window.top")
+                );
+                previewWindow.resizeTo(
+                    _prefs.get("window.width"),
+                    _prefs.get("window.height")
+                );
+                previewWindow.onload = function () {
+                    $iframe = $(previewWindow.document).find("#panel-markdown-preview-frame");
+                    _resizeIframeWindow();
+                    _loadDoc(DocumentManager.getCurrentDocument());
+                };
+                previewWindow.onresize = function () {
+                    _resizeIframeWindow();
+                };
+                previewWindow.onunload = function () {
+                    //console.log("window unloaded", previewWindow.screenX, previewWindow.screenY, previewWindow.outerWidth, previewWindow.outerHeight);
+                    _prefs.set("window.left", previewWindow.screenX);
+                    _prefs.set("window.top", previewWindow.screenY);
+                    _prefs.set("window.width", previewWindow.outerWidth);
+                    _prefs.set("window.height", previewWindow.outerHeight);
+                };
+                $icon.toggleClass("active");
+            } else {
+                previewWindow.close();
+                $icon.toggleClass("active");
             }
-            _loadDoc(DocumentManager.getCurrentDocument());
-            $icon.toggleClass("active");
-            panel.show();
         } else {
-            $icon.toggleClass("active");
-            panel.hide();
+            if (isVisible) {
+                if (!panel) {
+                    $panel = $(panelHTML);
+                    $iframe = $panel.find("#panel-markdown-preview-frame");
+
+                    panel = PanelManager.createBottomPanel("markdown-preview-panel", $panel);
+                    $panel.on("panelResizeUpdate", function (e, newSize) {
+                        $iframe.attr("height", newSize);
+                    });
+                    $iframe.attr("height", $panel.height());
+
+                    window.setTimeout(_resizeIframePanel);
+
+                    $settingsToggle = $("#markdown-settings-toggle")
+                        .click(function (e) {
+                            if ($settings) {
+                                _hideSettings();
+                            } else {
+                                _showSettings(e);
+                            }
+                        });
+                }
+                _loadDoc(DocumentManager.getCurrentDocument());
+                $icon.toggleClass("active");
+                panel.show();
+            } else {
+                $icon.toggleClass("active");
+                panel.hide();
+            }
         }
     }
 
@@ -303,6 +352,6 @@ define(function (require, exports, module) {
     });
     
     // Listen for resize events
-    $(PanelManager).on("editorAreaResize", _resizeIframe);
-    $("#sidebar").on("panelCollapsed panelExpanded panelResizeUpdate", _resizeIframe);
+    $(PanelManager).on("editorAreaResize", _resizeIframePanel);
+    $("#sidebar").on("panelCollapsed panelExpanded panelResizeUpdate", _resizeIframePanel);
 });
