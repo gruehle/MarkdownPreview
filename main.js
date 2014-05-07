@@ -261,7 +261,7 @@ define(function (require, exports, module) {
             currentDoc = null;
         }
         
-        if (doc && /md|markdown|txt/.test(ext)) {
+        if (doc && /md|markdown|litcoffee|txt/.test(ext)) {
             currentDoc = doc;
             $(currentDoc).on("change", _documentChange);
             $icon.css({display: "block"});
