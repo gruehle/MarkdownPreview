@@ -21,7 +21,7 @@
  */
 
 /*jslint vars: true, plusplus: true, devel: true, nomen: true,  regexp: true, indent: 4, maxerr: 50 */
-/*global define, brackets, $, window, PathUtils, marked, _hideSettings */
+/*global define, brackets, $, window, marked, _hideSettings */
 
 define(function (require, exports, module) {
     "use strict";
@@ -254,7 +254,7 @@ define(function (require, exports, module) {
 
     function _currentDocChangedHandler() {
         var doc = DocumentManager.getCurrentDocument(),
-            ext = doc ? PathUtils.filenameExtension(doc.file.fullPath).toLowerCase() : "";
+            ext = doc ? FileUtils.getFileExtension(doc.file.fullPath).toLowerCase() : "";
         
         if (currentDoc) {
             $(currentDoc).off("change", _documentChange);
