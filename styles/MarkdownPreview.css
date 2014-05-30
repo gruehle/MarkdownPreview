@@ -74,3 +74,11 @@
     padding-right: 10px;
     vertical-align: middle;
 }
+
+#markdown-settings-panel label {
+    display: inline-block;
+}
+
+#markdown-settings-panel input {
+    margin-right: 10px;
+}

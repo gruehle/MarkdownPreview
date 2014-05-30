@@ -37,7 +37,8 @@ define(function (require, exports, module) {
         PopUpManager        = brackets.getModule("widgets/PopUpManager"),
         PreferencesManager  = brackets.getModule("preferences/PreferencesManager"),
         Resizer             = brackets.getModule("utils/Resizer"),
-        StringUtils         = brackets.getModule("utils/StringUtils");
+        StringUtils         = brackets.getModule("utils/StringUtils"),
+        _                   = brackets.getModule("thirdparty/lodash");
 
     // Templates
     var panelHTML       = require("text!templates/panel.html"),
@@ -55,6 +56,7 @@ define(function (require, exports, module) {
     
     // Other vars
     var currentDoc,
+        currentEditor,
         panel,
         visible = false,
         realVisibility = false;
@@ -63,6 +65,7 @@ define(function (require, exports, module) {
     var _prefs = PreferencesManager.getExtensionPrefs("markdown-preview");
     _prefs.definePreference("useGFM", "boolean", false);
     _prefs.definePreference("theme", "string", "clean");
+    _prefs.definePreference("syncScroll", "boolean", true);
 
     // Convert any old-style prefs
     PreferencesManager.convertPreferences(module, {
@@ -134,19 +137,18 @@ define(function (require, exports, module) {
         }
     }
     
-    var _timer;
+    function _editorScroll() {
+        if (_prefs.get("syncScroll")) {
+            var scrollInfo = currentEditor._codeMirror.getScrollInfo();
+            var scrollPercentage = scrollInfo.top / (scrollInfo.height - scrollInfo.clientHeight);
+            var scrollTop = ($iframe[0].contentDocument.height - $iframe[0].height) * scrollPercentage;
+
+            $iframe[0].contentDocument.body.scrollTop = Math.round(scrollTop);
+        }
+    }
     
     function _documentChange(e) {
-        // "debounce" the page updates to avoid thrashing/flickering
-        // Note: this should use Async.whenIdle() once brackets/pull/5528
-        // is merged.
-        if (_timer) {
-            window.clearTimeout(_timer);
-        }
-        _timer = window.setTimeout(function () {
-            _timer = null;
-            _loadDoc(e.target, true);
-        }, 300);
+        _loadDoc(e.target, true);
     }
     
     function _resizeIframe() {
@@ -163,9 +165,6 @@ define(function (require, exports, module) {
             breaks: useGFM,
             gfm: useGFM
         });
-        
-        // Save preferences
-        // TODO
         
         // Re-render
         _loadDoc(currentDoc, true);
@@ -210,6 +209,16 @@ define(function (require, exports, module) {
                 _prefs.set("theme", e.target.value);
                 _updateSettings();
             });
+        
+        var $syncScroll = $settings.find("#markdown-preview-sync-scroll");
+        
+        $syncScroll.change(function (e) {
+            _prefs.set("syncScroll", e.target.checked);
+        });
+        
+        if (_prefs.get("syncScroll")) {
+            $syncScroll.attr("checked", true);
+        }
         
         PopUpManager.addPopUp($settings, _hideSettings, true);
         $(window.document).on("mousedown", _documentClicked);
@@ -261,9 +270,16 @@ define(function (require, exports, module) {
             currentDoc = null;
         }
         
+        if (currentEditor) {
+            $(currentEditor).off("scroll", _editorScroll);
+            currentEditor = null;
+        }
+        
         if (doc && /md|markdown|txt/.test(ext)) {
             currentDoc = doc;
             $(currentDoc).on("change", _documentChange);
+            currentEditor = EditorManager.getCurrentFullEditor();
+            $(currentEditor).on("scroll", _editorScroll);
             $icon.css({display: "block"});
             _setPanelVisibility(visible);
             _loadDoc(doc);
@@ -277,6 +293,13 @@ define(function (require, exports, module) {
         visible = !visible;
         _setPanelVisibility(visible);
     }
+    
+    // Debounce event callback to avoid excess overhead
+    // Update preview 300 ms ofter document change
+    // Sync scroll 1ms after document scroll (just enough to ensure
+    // the document scroll isn't blocked).
+    _documentChange = _.debounce(_documentChange, 300);
+    _editorScroll = _.debounce(_editorScroll, 1);
     
     // Insert CSS for this extension
     ExtensionUtils.loadStyleSheet(module, "styles/MarkdownPreview.css");
