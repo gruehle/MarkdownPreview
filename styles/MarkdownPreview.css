@@ -22,7 +22,7 @@
     background-size: contain;
     padding: 0;
     opacity: 0.05;
-    transition-property: 'opacity';
+    transition-property: opacity;
     transition-duration: .2s;
     -webkit-filter: drop-shadow(0 0 2px #fff);
     filter: drop-shadow(0 0 1px #fff);
