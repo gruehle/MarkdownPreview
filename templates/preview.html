@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <base href="<%= baseUrl %>">
+        <link rel="stylesheet" href = "<%= themeUrl %>">
+        <style>
+            .hidden {
+                visibility: hidden;
+            }
+        </style>
+    </head>
+    <body class="hiddenZZ" onload="document.body.scrollTop = <%= scrollTop %>;document.body.className=''">
+        <%= bodyText %>
+    </body>
+</html>

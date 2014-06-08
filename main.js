@@ -42,6 +42,7 @@ define(function (require, exports, module) {
 
     // Templates
     var panelHTML       = require("text!templates/panel.html"),
+        previewHTML     = require("text!templates/preview.html"),
         settingsHTML    = require("text!templates/settings.html");
     
     // Local modules
@@ -93,6 +94,22 @@ define(function (require, exports, module) {
         _hideSettings();
     }
     
+    function _calcScrollPos() {
+        var scrollInfo = currentEditor._codeMirror.getScrollInfo();
+        var scrollPercentage = scrollInfo.top / (scrollInfo.height - scrollInfo.clientHeight);
+        var scrollTop = ($iframe[0].contentDocument.height - $iframe[0].height) * scrollPercentage;
+        
+        return Math.round(scrollTop);
+    }
+     
+    function _editorScroll() {
+        if (_prefs.get("syncScroll") && $iframe) {
+            var scrollTop = _calcScrollPos();
+
+            $iframe[0].contentDocument.body.scrollTop = scrollTop;
+        }
+    }
+   
     function _loadDoc(doc, preserveScrollPos) {
         if (doc && visible && $iframe) {
             var docText     = doc.getText(),
@@ -108,6 +125,8 @@ define(function (require, exports, module) {
             
             if (preserveScrollPos) {
                 scrollPos = $iframe.contents()[0].body.scrollTop;
+            } else if (_prefs.get("syncScroll")) {
+                scrollPos = _calcScrollPos();
             }
             
             // Parse markdown into HTML
@@ -120,30 +139,25 @@ define(function (require, exports, module) {
             var baseUrl = window.location.protocol + "//" + FileUtils.getDirectoryPath(doc.file.fullPath);
                 
             // Assemble the HTML source
-            var htmlSource = "<html><head>";
-            var theme = _prefs.get("theme");
-            htmlSource += "<base href='" + baseUrl + "'>";
-            htmlSource += "<link href='" + require.toUrl("./themes/" + theme + ".css") + "' rel='stylesheet'></link>";
-            htmlSource += "</head><body onload='document.body.scrollTop=" + scrollPos + "'>";
-            htmlSource += bodyText;
-            htmlSource += "</body></html>";
+            var htmlSource = _.template(previewHTML, {
+                baseUrl    : baseUrl,
+                themeUrl   : require.toUrl("./themes/" + _prefs.get("theme") + ".css"),
+                scrollTop  : scrollPos,
+                bodyText   : bodyText
+            });
             $iframe.attr("srcdoc", htmlSource);
             
-            // Open external browser when links are clicked
-            // (similar to what brackets.js does - but attached to the iframe's document)
             $iframe.load(function () {
+                // Open external browser when links are clicked
+                // (similar to what brackets.js does - but attached to the iframe's document)
                 $iframe[0].contentDocument.body.addEventListener("click", _handleLinkClick, true);
+                
+                // Sync scroll position (if needed)
+                _editorScroll();
+                
+                // Make sure iframe is showing
+                $iframe.show();
             });
-        }
-    }
-    
-    function _editorScroll() {
-        if (_prefs.get("syncScroll")) {
-            var scrollInfo = currentEditor._codeMirror.getScrollInfo();
-            var scrollPercentage = scrollInfo.top / (scrollInfo.height - scrollInfo.clientHeight);
-            var scrollTop = ($iframe[0].contentDocument.height - $iframe[0].height) * scrollPercentage;
-
-            $iframe[0].contentDocument.body.scrollTop = Math.round(scrollTop);
         }
     }
     
@@ -251,6 +265,8 @@ define(function (require, exports, module) {
                             _showSettings(e);
                         }
                     });
+                
+                $iframe.hide();
             }
             _loadDoc(DocumentManager.getCurrentDocument());
             $icon.toggleClass("active");
@@ -258,6 +274,7 @@ define(function (require, exports, module) {
         } else {
             $icon.toggleClass("active");
             panel.hide();
+            $iframe.hide();
         }
     }
 
