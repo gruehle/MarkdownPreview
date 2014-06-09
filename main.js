@@ -228,6 +228,7 @@ define(function (require, exports, module) {
         
         $syncScroll.change(function (e) {
             _prefs.set("syncScroll", e.target.checked);
+            _editorScroll();
         });
         
         if (_prefs.get("syncScroll")) {
