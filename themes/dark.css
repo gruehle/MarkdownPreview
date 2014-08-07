@@ -82,6 +82,34 @@ img { border: 0; -ms-interpolation-mode: bicubic; vertical-align: middle; }
 table { border-collapse: collapse; border-spacing: 0; }
 td { vertical-align: top; }
 
+table.markdown-format {
+    width:100%;
+    border-collapse:collapse;
+    border:solid #dddddd;
+    border-width:1px 1px 2px 1px;
+    margin:1em 0;
+    -webkit-border-radius:3px;
+    -moz-border-radius:3px;
+    border-radius:3px;
+    -moz-background-clip:padding;
+    -webkit-background-clip:padding-box;
+    background-clip:padding-box
+}
+
+table.markdown-format th,
+table.markdown-format td {
+    border:solid #dddddd;border-width:1px;padding:10px;vertical-align:top}
+
+table.markdown-format th>*:first-child,
+table.markdown-format td>*:first-child {
+    margin-top:0}
+
+table.markdown-format th>*:first-child,
+table.markdown-format td>*:first-child {
+    margin-bottom:0}
+
+table.markdown-format th {font-weight:bold;color:#c8d4dc;background-color:#555}
+
 @media print {
   * { background: transparent !important; color: black !important; filter:none !important; -ms-filter: none !important; }
   body{font-size:12pt; max-width:100%;}
