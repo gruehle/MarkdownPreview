@@ -33,11 +33,12 @@ define(function (require, exports, module) {
         EditorManager       = brackets.getModule("editor/EditorManager"),
         ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
         FileUtils           = brackets.getModule("file/FileUtils"),
-        PanelManager        = brackets.getModule("view/PanelManager"),
+        WorkspaceManager    = brackets.getModule("view/WorkspaceManager"),
         PopUpManager        = brackets.getModule("widgets/PopUpManager"),
         PreferencesManager  = brackets.getModule("preferences/PreferencesManager"),
         Resizer             = brackets.getModule("utils/Resizer"),
         StringUtils         = brackets.getModule("utils/StringUtils"),
+        MainViewManager     = brackets.getModule("view/MainViewManager"),
         _                   = brackets.getModule("thirdparty/lodash");
 
     // Templates
@@ -250,7 +251,7 @@ define(function (require, exports, module) {
                 $panel = $(panelHTML);
                 $iframe = $panel.find("#panel-markdown-preview-frame");
                 
-                panel = PanelManager.createBottomPanel("markdown-preview-panel", $panel);
+                panel = WorkspaceManager.createBottomPanel("markdown-preview-panel", $panel);
                 $panel.on("panelResizeUpdate", function (e, newSize) {
                     $iframe.attr("height", newSize);
                 });
@@ -335,7 +336,7 @@ define(function (require, exports, module) {
         .appendTo($("#main-toolbar .buttons"));
     
     // Add a document change handler
-    $(DocumentManager).on("currentDocumentChange", _currentDocChangedHandler);
+    $(MainViewManager).on("currentFileChange", _currentDocChangedHandler);
     
     // currentDocumentChange is *not* called for the initial document. Use
     // appReady() to set initial state.
@@ -344,6 +345,6 @@ define(function (require, exports, module) {
     });
     
     // Listen for resize events
-    $(PanelManager).on("editorAreaResize", _resizeIframe);
+    $(MainViewManager).on("workspaceUpdateLayout", _resizeIframe);
     $("#sidebar").on("panelCollapsed panelExpanded panelResizeUpdate", _resizeIframe);
 });
