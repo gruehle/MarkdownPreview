@@ -11,6 +11,10 @@
     position: relative;
 }
 
+#panel-markdown-preview-frame {
+    border: none;
+}
+
 #markdown-settings-toggle {
     position: absolute;
     cursor: pointer;

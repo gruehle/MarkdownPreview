@@ -39,6 +39,7 @@ define(function (require, exports, module) {
         Resizer             = brackets.getModule("utils/Resizer"),
         StringUtils         = brackets.getModule("utils/StringUtils"),
         MainViewManager     = brackets.getModule("view/MainViewManager"),
+        WorkspaceManager    = brackets.getModule("view/WorkspaceManager"),
         _                   = brackets.getModule("thirdparty/lodash");
 
     // Templates
@@ -68,12 +69,6 @@ define(function (require, exports, module) {
     _prefs.definePreference("useGFM", "boolean", false);
     _prefs.definePreference("theme", "string", "clean");
     _prefs.definePreference("syncScroll", "boolean", true);
-
-    // Convert any old-style prefs
-    PreferencesManager.convertPreferences(module, {
-        "useGFM": "user markdown-preview.useGFM",
-        "theme": "user markdown-preview.theme"
-    });
     
     // (based on code in brackets.js)
     function _handleLinkClick(e) {
@@ -345,6 +340,6 @@ define(function (require, exports, module) {
     });
     
     // Listen for resize events
-    $(MainViewManager).on("workspaceUpdateLayout", _resizeIframe);
+    $(WorkspaceManager).on("workspaceUpdateLayout", _resizeIframe);
     $("#sidebar").on("panelCollapsed panelExpanded panelResizeUpdate", _resizeIframe);
 });
