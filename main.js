@@ -33,12 +33,11 @@ define(function (require, exports, module) {
         EditorManager       = brackets.getModule("editor/EditorManager"),
         ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
         FileUtils           = brackets.getModule("file/FileUtils"),
-        WorkspaceManager    = brackets.getModule("view/WorkspaceManager"),
+        MainViewManager     = brackets.getModule("view/MainViewManager"),
         PopUpManager        = brackets.getModule("widgets/PopUpManager"),
         PreferencesManager  = brackets.getModule("preferences/PreferencesManager"),
         Resizer             = brackets.getModule("utils/Resizer"),
         StringUtils         = brackets.getModule("utils/StringUtils"),
-        MainViewManager     = brackets.getModule("view/MainViewManager"),
         WorkspaceManager    = brackets.getModule("view/WorkspaceManager"),
         _                   = brackets.getModule("thirdparty/lodash");
 
@@ -93,7 +92,7 @@ define(function (require, exports, module) {
     function _calcScrollPos() {
         var scrollInfo = currentEditor._codeMirror.getScrollInfo();
         var scrollPercentage = scrollInfo.top / (scrollInfo.height - scrollInfo.clientHeight);
-        var scrollTop = ($iframe[0].contentDocument.height - $iframe[0].height) * scrollPercentage;
+        var scrollTop = ($iframe[0].contentDocument.body.scrollHeight - $iframe[0].clientHeight) * scrollPercentage;
         
         return Math.round(scrollTop);
     }
@@ -280,20 +279,20 @@ define(function (require, exports, module) {
             ext = doc ? FileUtils.getFileExtension(doc.file.fullPath).toLowerCase() : "";
         
         if (currentDoc) {
-            $(currentDoc).off("change", _documentChange);
+            currentDoc.off("change", _documentChange);
             currentDoc = null;
         }
         
         if (currentEditor) {
-            $(currentEditor).off("scroll", _editorScroll);
+            currentEditor.off("scroll", _editorScroll);
             currentEditor = null;
         }
         
         if (doc && /md|markdown|litcoffee|txt/.test(ext)) {
             currentDoc = doc;
-            $(currentDoc).on("change", _documentChange);
+            currentDoc.on("change", _documentChange);
             currentEditor = EditorManager.getCurrentFullEditor();
-            $(currentEditor).on("scroll", _editorScroll);
+            currentEditor.on("scroll", _editorScroll);
             $icon.css({display: "block"});
             _setPanelVisibility(visible);
             _loadDoc(doc);
@@ -331,7 +330,7 @@ define(function (require, exports, module) {
         .appendTo($("#main-toolbar .buttons"));
     
     // Add a document change handler
-    $(MainViewManager).on("currentFileChange", _currentDocChangedHandler);
+    MainViewManager.on("currentFileChange", _currentDocChangedHandler);
     
     // currentDocumentChange is *not* called for the initial document. Use
     // appReady() to set initial state.
@@ -340,6 +339,6 @@ define(function (require, exports, module) {
     });
     
     // Listen for resize events
-    $(WorkspaceManager).on("workspaceUpdateLayout", _resizeIframe);
+    WorkspaceManager.on("workspaceUpdateLayout", _resizeIframe);
     $("#sidebar").on("panelCollapsed panelExpanded panelResizeUpdate", _resizeIframe);
 });
