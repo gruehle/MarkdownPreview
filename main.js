@@ -130,6 +130,9 @@ define(function (require, exports, module) {
             // Show URL in link tooltip
             bodyText = bodyText.replace(/(href=\"([^\"]*)\")/g, "$1 title=\"$2\"");
             
+            // Convert protocol-relative URLS
+            bodyText = bodyText.replace(/src="\/\//g, "src=\"http://");
+            
             // Make <base> tag for relative URLS
             var baseUrl = window.location.protocol + "//" + FileUtils.getDirectoryPath(doc.file.fullPath);
                 
