@@ -142,13 +142,17 @@ define(function (require, exports, module) {
             });
             $iframe.attr("srcdoc", htmlSource);
             
+            // Remove any existing load handlers
+            $iframe.off("load");
             $iframe.load(function () {
                 // Open external browser when links are clicked
                 // (similar to what brackets.js does - but attached to the iframe's document)
                 $iframe[0].contentDocument.body.addEventListener("click", _handleLinkClick, true);
                 
                 // Sync scroll position (if needed)
-                _editorScroll();
+                if (!preserveScrollPos) {
+                    _editorScroll();
+                }
                 
                 // Make sure iframe is showing
                 $iframe.show();
