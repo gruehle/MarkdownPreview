@@ -105,7 +105,7 @@ define(function (require, exports, module) {
         }
     }
    
-    function _loadDoc(doc, preserveScrollPos) {
+    function _loadDoc(doc, isReload) {
         if (doc && visible && $iframe) {
             var docText     = doc.getText(),
                 scrollPos   = 0,
@@ -118,7 +118,7 @@ define(function (require, exports, module) {
                 docText = docText.substr(yamlMatch[0].length);
             }
             
-            if (preserveScrollPos) {
+            if (isReload) {
                 scrollPos = $iframe.contents()[0].body.scrollTop;
             } else if (_prefs.get("syncScroll")) {
                 scrollPos = _calcScrollPos();
@@ -133,33 +133,37 @@ define(function (require, exports, module) {
             // Convert protocol-relative URLS
             bodyText = bodyText.replace(/src="\/\//g, "src=\"http://");
             
-            // Make <base> tag for relative URLS
-            var baseUrl = window.location.protocol + "//" + FileUtils.getDirectoryPath(doc.file.fullPath);
-                
-            // Assemble the HTML source
-            var htmlSource = _.template(previewHTML, {
-                baseUrl    : baseUrl,
-                themeUrl   : require.toUrl("./themes/" + _prefs.get("theme") + ".css"),
-                scrollTop  : scrollPos,
-                bodyText   : bodyText
-            });
-            $iframe.attr("srcdoc", htmlSource);
-            
-            // Remove any existing load handlers
-            $iframe.off("load");
-            $iframe.load(function () {
-                // Open external browser when links are clicked
-                // (similar to what brackets.js does - but attached to the iframe's document)
-                $iframe[0].contentDocument.body.addEventListener("click", _handleLinkClick, true);
-                
-                // Sync scroll position (if needed)
-                if (!preserveScrollPos) {
-                    _editorScroll();
-                }
-                
-                // Make sure iframe is showing
-                $iframe.show();
-            });
+            if (isReload) {
+                $iframe[0].contentDocument.body.innerHTML = bodyText;
+            } else {
+                // Make <base> tag for relative URLS
+                var baseUrl = window.location.protocol + "//" + FileUtils.getDirectoryPath(doc.file.fullPath);
+
+                // Assemble the HTML source
+                var htmlSource = _.template(previewHTML, {
+                    baseUrl    : baseUrl,
+                    themeUrl   : require.toUrl("./themes/" + _prefs.get("theme") + ".css"),
+                    scrollTop  : scrollPos,
+                    bodyText   : bodyText
+                });
+                $iframe.attr("srcdoc", htmlSource);
+
+                // Remove any existing load handlers
+                $iframe.off("load");
+                $iframe.load(function () {
+                    // Open external browser when links are clicked
+                    // (similar to what brackets.js does - but attached to the iframe's document)
+                    $iframe[0].contentDocument.body.addEventListener("click", _handleLinkClick, true);
+
+                    // Sync scroll position (if needed)
+                    if (!isReload) {
+                        _editorScroll();
+                    }
+
+                    // Make sure iframe is showing
+                    $iframe.show();
+                });
+            }
         }
     }
     
@@ -183,7 +187,7 @@ define(function (require, exports, module) {
         });
         
         // Re-render
-        _loadDoc(currentDoc, true);
+        _loadDoc(currentDoc);
     }
     
     function _documentClicked(e) {
