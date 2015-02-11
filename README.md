@@ -2,6 +2,8 @@
 
 A [Brackets](https://github.com/adobe/brackets) extension that provides a live preview of markdown documents. 
 
+![Alt text](./screenshots/markdown-preview.png?raw=true "Markdown Preview")
+
 ### Installation
 
 * Select **File > Extension Manager...** (or click the "brick" icon in the toolbar)
