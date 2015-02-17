@@ -33,6 +33,7 @@ define(function (require, exports, module) {
         EditorManager       = brackets.getModule("editor/EditorManager"),
         ExtensionUtils      = brackets.getModule("utils/ExtensionUtils"),
         FileUtils           = brackets.getModule("file/FileUtils"),
+        LanguageManager     = brackets.getModule("language/LanguageManager"),
         MainViewManager     = brackets.getModule("view/MainViewManager"),
         PopUpManager        = brackets.getModule("widgets/PopUpManager"),
         PreferencesManager  = brackets.getModule("preferences/PreferencesManager"),
@@ -56,18 +57,24 @@ define(function (require, exports, module) {
         $settingsToggle,
         $settings;
     
+    // Markdown Language objects
+    var mdExt = LanguageManager.getLanguage("markdown").getFileExtensions();
+    var gfmExt = LanguageManager.getLanguage("gfm").getFileExtensions();
+    var extensions = mdExt.concat(gfmExt, ["litcoffee", "txt"]);
+    
     // Other vars
     var currentDoc,
         currentEditor,
         panel,
         visible = false,
         realVisibility = false;
-
+    
     // Prefs
     var _prefs = PreferencesManager.getExtensionPrefs("markdown-preview");
     _prefs.definePreference("useGFM", "boolean", false);
     _prefs.definePreference("theme", "string", "clean");
     _prefs.definePreference("syncScroll", "boolean", true);
+    _prefs.definePreference("extensions", "array", extensions);
     
     // (based on code in brackets.js)
     function _handleLinkClick(e) {
@@ -230,6 +237,18 @@ define(function (require, exports, module) {
                 _updateSettings();
             });
         
+        $settings.find("#markdown-preview-extensions")
+            .val(_prefs.get("extensions").join(", "))
+            .change(function (e) {
+                _prefs.set(
+                    "extensions",
+                    e.target.value
+                        .replace(/\s+/g, "")
+                        .split(",") 
+                        .filter(function(v) {  return v !== ""  })
+                )
+            });
+        
         var $syncScroll = $settings.find("#markdown-preview-sync-scroll");
         
         $syncScroll.change(function (e) {
@@ -287,7 +306,8 @@ define(function (require, exports, module) {
 
     function _currentDocChangedHandler() {
         var doc = DocumentManager.getCurrentDocument(),
-            ext = doc ? FileUtils.getFileExtension(doc.file.fullPath).toLowerCase() : "";
+            extDoc = doc  ? FileUtils.getFileExtension(doc.file.fullPath).toLowerCase() : "",
+            extPrefs = new RegExp(_prefs.get("extensions").join('|'));
         
         if (currentDoc) {
             currentDoc.off("change", _documentChange);
@@ -299,7 +319,7 @@ define(function (require, exports, module) {
             currentEditor = null;
         }
         
-        if (doc && /md|markdown|litcoffee|txt/.test(ext)) {
+        if (doc && extPrefs.test(extDoc)) {
             currentDoc = doc;
             currentDoc.on("change", _documentChange);
             currentEditor = EditorManager.getCurrentFullEditor();
