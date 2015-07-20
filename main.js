@@ -37,6 +37,8 @@ define(function (require, exports, module) {
         PopUpManager        = brackets.getModule("widgets/PopUpManager"),
         PreferencesManager  = brackets.getModule("preferences/PreferencesManager"),
         WorkspaceManager    = brackets.getModule("view/WorkspaceManager"),
+        CommandManager      = brackets.getModule("command/CommandManager"),
+        Menus               = brackets.getModule("command/Menus"),
         _                   = brackets.getModule("thirdparty/lodash");
 
     // Templates
@@ -58,6 +60,8 @@ define(function (require, exports, module) {
     var currentDoc,
         currentEditor,
         panel,
+        viewMenu,
+        toggleCmd,
         visible = false,
         realVisibility = false;
 
@@ -281,6 +285,8 @@ define(function (require, exports, module) {
             panel.hide();
             $iframe.hide();
         }
+
+        toggleCmd.setChecked(isVisible);
     }
 
     function _currentDocChangedHandler() {
@@ -304,9 +310,11 @@ define(function (require, exports, module) {
             currentEditor.on("scroll", _editorScroll);
             $icon.css({display: "block"});
             _setPanelVisibility(visible);
+            toggleCmd.setEnabled(true);
             _loadDoc(doc);
         } else {
             $icon.css({display: "none"});
+            toggleCmd.setEnabled(false);
             _setPanelVisibility(false);
         }
     }
@@ -340,6 +348,14 @@ define(function (require, exports, module) {
 
     // Add a document change handler
     MainViewManager.on("currentFileChange", _currentDocChangedHandler);
+
+    viewMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);
+    toggleCmd = CommandManager.register("Markdown Preview", "toggleMarkdownPreview", _toggleVisibility);
+
+    viewMenu.addMenuItem(toggleCmd);
+
+    toggleCmd.setChecked(realVisibility);
+    toggleCmd.setEnabled(realVisibility);
 
     // currentDocumentChange is *not* called for the initial document. Use
     // appReady() to set initial state.
