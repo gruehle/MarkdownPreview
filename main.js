@@ -285,8 +285,6 @@ define(function (require, exports, module) {
             panel.hide();
             $iframe.hide();
         }
-
-        toggleCmd.setChecked(isVisible);
     }
 
     function _currentDocChangedHandler() {
@@ -322,6 +320,8 @@ define(function (require, exports, module) {
     function _toggleVisibility() {
         visible = !visible;
         _setPanelVisibility(visible);
+
+        toggleCmd.setChecked(visible);
     }
 
     // Debounce event callback to avoid excess overhead
