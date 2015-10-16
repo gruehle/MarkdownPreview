@@ -142,7 +142,7 @@ define(function (require, exports, module) {
                 var baseUrl = window.location.protocol + "//" + FileUtils.getDirectoryPath(doc.file.fullPath);
 
                 // Assemble the HTML source
-                var htmlSource = _.template(previewHTML, {
+                var htmlSource = _.template(previewHTML)({
                     baseUrl    : baseUrl,
                     themeUrl   : require.toUrl("./themes/" + _prefs.get("theme") + ".css"),
                     scrollTop  : scrollPos,
