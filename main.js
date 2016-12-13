@@ -21,7 +21,7 @@
  */
 
 /*jslint vars: true, plusplus: true, devel: true, nomen: true,  regexp: true, indent: 4, maxerr: 50 */
-/*global define, brackets, $, window, _hideSettings */
+/*global define, brackets, $, _hideSettings, _confirmFile, setCustomTheme */
 
 define(function (require, exports, module) {
     "use strict";
@@ -39,7 +39,9 @@ define(function (require, exports, module) {
         WorkspaceManager    = brackets.getModule("view/WorkspaceManager"),
         CommandManager      = brackets.getModule("command/CommandManager"),
         Menus               = brackets.getModule("command/Menus"),
-        _                   = brackets.getModule("thirdparty/lodash");
+        _                   = brackets.getModule("thirdparty/lodash"),
+        Dialogs             = brackets.getModule("widgets/Dialogs"),
+        FileSystem          = brackets.getModule("filesystem/FileSystem");
 
     // Templates
     var panelHTML       = require("text!templates/panel.html"),
@@ -63,13 +65,15 @@ define(function (require, exports, module) {
         viewMenu,
         toggleCmd,
         visible = false,
-        realVisibility = false;
+        realVisibility = false,
+        docLoading = false;
 
     // Prefs
     var _prefs = PreferencesManager.getExtensionPrefs("markdown-preview");
     _prefs.definePreference("useGFM", "boolean", false);
     _prefs.definePreference("theme", "string", "clean");
     _prefs.definePreference("syncScroll", "boolean", true);
+    _prefs.definePreference("customTheme", "string", "");
 
     // (based on code in brackets.js)
     function _handleLinkClick(e) {
@@ -139,12 +143,27 @@ define(function (require, exports, module) {
                 $iframe[0].contentDocument.body.innerHTML = bodyText;
             } else {
                 // Make <base> tag for relative URLS
-                var baseUrl = window.location.protocol + "//" + FileUtils.getDirectoryPath(doc.file.fullPath);
+                var baseUrl = window.location.protocol + "//" + FileUtils.getDirectoryPath(doc.file.fullPath),
+                    themeURI;
+
+                if (docLoading) {
+                    return;
+                }
+
+                docLoading = true;
+
+                if (_prefs.get("theme") === "custom") {
+                    themeURI = require.toUrl(_prefs.get("customTheme"));
+
+                    _confirmFile(themeURI);
+                } else {
+                    themeURI = require.toUrl("./themes/" + _prefs.get("theme") + ".css");
+                }
 
                 // Assemble the HTML source
                 var htmlSource = _.template(previewHTML)({
                     baseUrl    : baseUrl,
-                    themeUrl   : require.toUrl("./themes/" + _prefs.get("theme") + ".css"),
+                    themeUrl   : themeURI,
                     scrollTop  : scrollPos,
                     bodyText   : bodyText
                 });
@@ -164,6 +183,7 @@ define(function (require, exports, module) {
 
                     // Make sure iframe is showing
                     $iframe.show();
+                    docLoading = false;
                 });
             }
         }
@@ -208,7 +228,7 @@ define(function (require, exports, module) {
         }
     }
 
-    function _showSettings(e) {
+    function _showSettings() {
         _hideSettings();
 
         $settings = $(settingsHTML)
@@ -228,8 +248,12 @@ define(function (require, exports, module) {
         $settings.find("#markdown-preview-theme")
             .val(_prefs.get("theme"))
             .change(function (e) {
-                _prefs.set("theme", e.target.value);
-                _updateSettings();
+                if (e.target.value === "custom" && !_prefs.get("customTheme")) {
+                    setCustomTheme();
+                } else {
+                    _prefs.set("theme", e.target.value);
+                    _updateSettings();
+                }
             });
 
         var $syncScroll = $settings.find("#markdown-preview-sync-scroll");
@@ -322,6 +346,101 @@ define(function (require, exports, module) {
         _setPanelVisibility(visible);
 
         toggleCmd.setChecked(visible);
+    }
+
+    // Support custom theme
+    function _onSelectCSS(err, fi) {
+        if (err) {
+            console.error(err);
+            Dialogs.showModalDialog(
+                "",
+                "Markdown Preview",
+                "There was an error with your selection."
+            );
+            return;
+        }
+
+        if (fi.length === 1) {
+            _prefs.set("theme", "custom");
+            _prefs.set("customTheme", fi[0]);
+            _updateSettings();
+        } else {
+            _showSettings();
+        }
+    }
+
+    function _onSelectModule(id) {
+        if (id === "cancel") {
+            _showSettings();
+            return;
+        }
+
+        FileSystem.showOpenDialog(
+            false,
+            false,
+            "Select a CSS file",
+            brackets.app.getUserDocumentsDirectory(),
+            ["css"],
+            _onSelectCSS
+        );
+    }
+
+    function setCustomTheme() {
+        _hideSettings();
+
+        Dialogs.showModalDialog(
+            "",
+            "Markdown Preview",
+            "Select a CSS file to style your theme with.",
+            [
+                {
+                    id: "select",
+                    text: "Select A File"
+                },
+                {
+                    id: "cancel",
+                    text: "Cancel"
+                }
+            ]
+        ).done(_onSelectModule);
+    }
+
+    function _resetCustomTheme() {
+        _prefs.set("customTheme", "");
+        _prefs.set("theme", "clean");
+
+        docLoading = false;
+        _updateSettings();
+    }
+
+    function _confirmFile(fi) {
+        var resetMsg = "<br><br>Please reset your custom theme path by reselecting \"custom\" from the theme dropdown.";
+
+        _hideSettings();
+
+        if (fi.slice(-4) !== ".css") {
+            _resetCustomTheme();
+
+            Dialogs.showModalDialog(
+                "",
+                "Markdown Preview",
+                "Your file must be of type CSS. " + resetMsg
+            );
+            return;
+        }
+
+        FileSystem.resolve(fi, function (err) {
+            if (err) {
+                _resetCustomTheme();
+
+                console.error(err);
+                Dialogs.showModalDialog(
+                    "",
+                    "Markdown Preview",
+                    "There was an error loading your file. " + resetMsg
+                );
+            }
+        });
     }
 
     // Debounce event callback to avoid excess overhead

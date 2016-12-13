@@ -13,6 +13,7 @@
 
 #panel-markdown-preview-frame {
     border: none;
+    background-color: #fff;
 }
 
 #markdown-settings-toggle {
