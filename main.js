@@ -18,6 +18,9 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
+ *
+ * Contributions:
+ * Leandro Silva | Grafluxe, 2016
  */
 
 /*jslint vars: true, plusplus: true, devel: true, nomen: true,  regexp: true, indent: 4, maxerr: 50 */
@@ -96,9 +99,13 @@ define(function (require, exports, module) {
     }
 
     function _calcScrollPos() {
-        var scrollInfo = currentEditor._codeMirror.getScrollInfo();
-        var scrollPercentage = scrollInfo.top / (scrollInfo.height - scrollInfo.clientHeight);
-        var scrollTop = ($iframe[0].contentDocument.body.scrollHeight - $iframe[0].clientHeight) * scrollPercentage;
+        var scrollInfo = currentEditor._codeMirror.getScrollInfo(),
+            scrollPercentage = scrollInfo.top / (scrollInfo.height - scrollInfo.clientHeight),
+            scrollTop;
+
+        if ($iframe[0].contentDocument.body) {
+            scrollTop = ($iframe[0].contentDocument.body.scrollHeight - $iframe[0].clientHeight) * scrollPercentage;
+        }
 
         return Math.round(scrollTop);
     }
@@ -410,7 +417,7 @@ define(function (require, exports, module) {
         _prefs.set("theme", "clean");
 
         docLoading = false;
-        _updateSettings();
+        window.requestAnimationFrame(_updateSettings);
     }
 
     function _confirmFile(fi) {
@@ -419,26 +426,28 @@ define(function (require, exports, module) {
         _hideSettings();
 
         if (fi.slice(-4) !== ".css") {
-            _resetCustomTheme();
-
             Dialogs.showModalDialog(
                 "",
                 "Markdown Preview",
                 "Your file must be of type CSS. " + resetMsg
             );
+
+            _resetCustomTheme();
+
             return;
         }
 
         FileSystem.resolve(fi, function (err) {
             if (err) {
-                _resetCustomTheme();
-
                 console.error(err);
+
                 Dialogs.showModalDialog(
                     "",
                     "Markdown Preview",
                     "There was an error loading your file. " + resetMsg
                 );
+
+                _resetCustomTheme();
             }
         });
     }
