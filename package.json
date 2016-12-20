@@ -8,5 +8,6 @@
     "license": "MIT",
     "engines": {
         "brackets": ">=1.1"
-    }
+    },
+    "contributors": ["Leandro Silva (http://grafluxe.com)"]
 }
