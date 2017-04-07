@@ -70,6 +70,7 @@ define(function (require, exports, module) {
     _prefs.definePreference("useGFM", "boolean", false);
     _prefs.definePreference("theme", "string", "clean");
     _prefs.definePreference("syncScroll", "boolean", true);
+    _prefs.definePreference("textWidth", "string", 80); //in CSS em's
 
     // (based on code in brackets.js)
     function _handleLinkClick(e) {
@@ -146,7 +147,8 @@ define(function (require, exports, module) {
                     baseUrl    : baseUrl,
                     themeUrl   : require.toUrl("./themes/" + _prefs.get("theme") + ".css"),
                     scrollTop  : scrollPos,
-                    bodyText   : bodyText
+                    bodyText   : bodyText,
+                    textWidth  : _prefs.get("textWidth")
                 });
                 $iframe.attr("srcdoc", htmlSource);
 
@@ -232,6 +234,27 @@ define(function (require, exports, module) {
                 _updateSettings();
             });
 
+		
+        var $width = $settings.find("#markdown-preview-text-width")
+            .val(_prefs.get("textWidth"))
+            .change(function (e) {
+				_prefs.set("textWidth", e.target.value);
+				_updateSettings();
+			});
+			
+		var timer = null;
+		$width.keyup(function(e) {
+			if (timer != null) {
+				clearTimeout(timer);
+			}
+			timer = setTimeout(function() {
+				timer = null;  
+				_prefs.set("textWidth", e.target.value);
+				_updateSettings();
+			  }, 300); 
+		})
+
+        
         var $syncScroll = $settings.find("#markdown-preview-sync-scroll");
 
         $syncScroll.change(function (e) {
