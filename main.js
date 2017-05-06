@@ -45,6 +45,11 @@ define(function (require, exports, module) {
     var panelHTML       = require("text!templates/panel.html"),
         previewHTML     = require("text!templates/preview.html"),
         settingsHTML    = require("text!templates/settings.html");
+    
+    // Emojis
+    var emojiPath       = FileUtils.getNativeModuleDirectoryPath(module)+"/emojis/";
+    var emojis          = require("text!emojis/emojis.json");
+    emojis = JSON.parse(emojis);
 
     // Local modules
     var marked          = require("lib/marked");
@@ -69,6 +74,7 @@ define(function (require, exports, module) {
     var _prefs = PreferencesManager.getExtensionPrefs("markdown-preview");
     _prefs.definePreference("useGFM", "boolean", false);
     _prefs.definePreference("theme", "string", "clean");
+    _prefs.definePreference("useEmojis", "boolean", false);
     _prefs.definePreference("syncScroll", "boolean", true);
 
     // (based on code in brackets.js)
@@ -134,6 +140,15 @@ define(function (require, exports, module) {
 
             // Convert protocol-relative URLS
             bodyText = bodyText.replace(/src="\/\//g, "src=\"http://");
+            
+            // Convert Text To Emojis if enabled
+            if (_prefs.get("useEmojis")){
+                console.log("Use Emojis");
+                for (var emoji in emojis) {
+                    var regexEmoji = new RegExp("\\\:("+emoji+")\\\:", 'g');
+                    bodyText = bodyText.replace(regexEmoji, "<img src=\""+emojiPath+emoji+".png\" alt=\""+emoji+"\" class=\"emoji\">");
+                }
+            }
 
             if (isReload) {
                 $iframe[0].contentDocument.body.innerHTML = bodyText;
@@ -241,6 +256,17 @@ define(function (require, exports, module) {
 
         if (_prefs.get("syncScroll")) {
             $syncScroll.attr("checked", true);
+        }
+
+        var $useEmojis = $settings.find("#markdown-preview-use-emojis");
+
+        $useEmojis.change(function (e) {
+            _prefs.set("useEmojis", e.target.checked);
+            _updateSettings();
+        });
+
+        if (_prefs.get("useEmojis")) {
+            $useEmojis.attr("checked", true);
         }
 
         PopUpManager.addPopUp($settings, _hideSettings, true);

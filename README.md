@@ -33,7 +33,10 @@ There are three themes available:
 * Dark - Light text on a dark background.
 * Classic - Black text with a serif font on a light background
 
-#### Sync scroll position
+#### Use Emojis
+When enabled. All \:bowtie\: will be converted into :bowtie:
+
+#### Sync scroll position :car:
 When checked, scrolling in the editor scrolls the preview to roughly the same location. 
 The scroll position of the preview is based on the scroll position of the source document, so the 
 position may be out of sync if you have really long lines in your source file. Scroll synchronization
@@ -45,3 +48,4 @@ This extension uses the following open source components:
 * [Marked](https://github.com/chjj/marked) - A markdown parser written in JavaScript
 * [markdown-css-themes](https://github.com/jasonm23/markdown-css-themes) - The themes are based on the "Swiss" theme
 * [markdown-mark](https://github.com/dcurtis/markdown-mark) - The icon used in the toolbar
+* [emoji-cheat-sheat](https://github.com/WebpageFX/emoji-cheat-sheet.com) - Where all the emojis came from.
