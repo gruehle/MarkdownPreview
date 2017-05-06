@@ -36,7 +36,7 @@ There are three themes available:
 #### Use Emojis
 When enabled. All \:bowtie\: will be converted into :bowtie:
 
-#### Sync scroll position :car:
+#### Sync scroll position
 When checked, scrolling in the editor scrolls the preview to roughly the same location. 
 The scroll position of the preview is based on the scroll position of the source document, so the 
 position may be out of sync if you have really long lines in your source file. Scroll synchronization

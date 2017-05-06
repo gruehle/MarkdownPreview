@@ -97,6 +97,7 @@ define(function (require, exports, module) {
         _hideSettings();
     }
 
+
     function _handleGFMCheckboxClick(e) {
         var node = e.target,
             chbxIndex = -1;
@@ -117,7 +118,7 @@ define(function (require, exports, module) {
                         chbxCurrVal = (chbxChecked) ? ' ' : 'x',
                         chbxNewVal = (chbxChecked) ? 'x' : ' ';
                     docLines.map(function (line, lineNr) {
-                        if (/^\s*\-\s*\[[ x]\]\s*/.test(line)) {
+                        if (/^\s*\-\s*\[[ xX]\]\s*/.test(line)) {
                             gfmChbxLineNrs.push(lineNr);
                         }
                     });
@@ -242,9 +243,9 @@ define(function (require, exports, module) {
 
         var renderer = new marked.Renderer();
         renderer.listitem = function (text) {
-            if (/^\[ \] \s*/.test(text)) {
+            if (/^\[ \] */.test(text)) {
                 text = '<input type="checkbox" class="gfm-checkbox"> ' + text.substr(4);
-            } else if (/^\[xX\] \s*/.test(text)) {
+            } else if (/^\[[xX]\] */.test(text)) {
                 text = '<input type="checkbox" checked="checked" class="gfm-checkbox"> ' + text.substr(4);
             }
             return '<li>' + text + '</li>\n';
