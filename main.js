@@ -47,7 +47,7 @@ define(function (require, exports, module) {
         settingsHTML    = require("text!templates/settings.html");
     
     // Emojis
-    var emojiPath       = FileUtils.getNativeModuleDirectoryPath(module)+"/emojis/";
+    var emojiPath       = FileUtils.getNativeModuleDirectoryPath(module) + "/emojis/";
     var emojis          = require("text!emojis/emojis.json");
     emojis = JSON.parse(emojis);
 
@@ -97,6 +97,46 @@ define(function (require, exports, module) {
         _hideSettings();
     }
 
+    function _handleGFMCheckboxClick(e) {
+        var node = e.target,
+            chbxIndex = -1;
+        if (currentDoc) {
+            if (node.tagName === "INPUT" && $(node).hasClass('gfm-checkbox')) {
+                var gfmCheckboxes = $($iframe[0].contentDocument).find('input.gfm-checkbox').each(function (idx, n) {
+                    if (node === n) {
+                        chbxIndex = idx;
+                    }
+                });
+                if (chbxIndex > -1) {
+                    var docText = currentDoc.getText(),
+                        docLines = docText.split("\n"),
+                        gfmChbxLineNrs = [],
+                        chbxChecked = node.checked,
+                        chbxLine = '',
+                        chbxPos = '',
+                        chbxCurrVal = (chbxChecked) ? ' ' : 'x',
+                        chbxNewVal = (chbxChecked) ? 'x' : ' ';
+                    docLines.map(function (line, lineNr) {
+                        if (/^\s*\-\s*\[[ x]\]\s*/.test(line)) {
+                            gfmChbxLineNrs.push(lineNr);
+                        }
+                    });
+                    if (chbxIndex >= 0 && chbxIndex < gfmChbxLineNrs.length) {
+                        chbxLine = docLines[gfmChbxLineNrs[chbxIndex]];
+                        chbxPos = chbxLine.indexOf('[' + chbxCurrVal + ']');
+                        if (chbxPos !== -1) {
+                            chbxLine = chbxLine.substr(0, chbxPos + 1) + chbxNewVal + chbxLine.substr(chbxPos + 2);
+                            docLines[gfmChbxLineNrs[chbxIndex]] = chbxLine;
+                        }
+                    }
+                    if (chbxPos !== -1) {
+                        currentDoc.setText(docLines.join("\n"));
+                    }
+                }
+            }
+        }
+    }
+
     function _calcScrollPos() {
         var scrollInfo = currentEditor._codeMirror.getScrollInfo();
         var scrollPercentage = scrollInfo.top / (scrollInfo.height - scrollInfo.clientHeight);
@@ -142,11 +182,11 @@ define(function (require, exports, module) {
             bodyText = bodyText.replace(/src="\/\//g, "src=\"http://");
             
             // Convert Text To Emojis if enabled
-            if (_prefs.get("useEmojis")){
-                console.log("Use Emojis");
-                for (var emoji in emojis) {
-                    var regexEmoji = new RegExp("\\\:("+emoji+")\\\:", 'g');
-                    bodyText = bodyText.replace(regexEmoji, "<img src=\""+emojiPath+emoji+".png\" alt=\""+emoji+"\" class=\"emoji\">");
+            if (_prefs.get("useEmojis")) {
+                var emoji;
+                for (emoji in emojis) {
+                    var regexEmoji = new RegExp("\\\:(" + emoji + ")\\\:", 'g');
+                    bodyText = bodyText.replace(regexEmoji, "<img src=\"" + emojiPath + emoji + ".png\" alt=\"" + emoji + "\" class=\"emoji\">");
                 }
             }
 
@@ -171,6 +211,7 @@ define(function (require, exports, module) {
                     // Open external browser when links are clicked
                     // (similar to what brackets.js does - but attached to the iframe's document)
                     $iframe[0].contentDocument.body.addEventListener("click", _handleLinkClick, true);
+                    $iframe[0].contentDocument.body.addEventListener("click", _handleGFMCheckboxClick, true);
 
                     // Sync scroll position (if needed)
                     if (!isReload) {
@@ -198,7 +239,19 @@ define(function (require, exports, module) {
     function _updateSettings() {
         // Format
         var useGFM = _prefs.get("useGFM");
+
+        var renderer = new marked.Renderer();
+        renderer.listitem = function (text) {
+            if (/^\[ \] \s*/.test(text)) {
+                text = '<input type="checkbox" class="gfm-checkbox"> ' + text.substr(4);
+            } else if (/^\[xX\] \s*/.test(text)) {
+                text = '<input type="checkbox" checked="checked" class="gfm-checkbox"> ' + text.substr(4);
+            }
+            return '<li>' + text + '</li>\n';
+        };
+
         marked.setOptions({
+            renderer: renderer,
             breaks: useGFM,
             gfm: useGFM
         });
@@ -335,6 +388,7 @@ define(function (require, exports, module) {
             $icon.css({display: "block"});
             _setPanelVisibility(visible);
             toggleCmd.setEnabled(true);
+            _updateSettings();
             _loadDoc(doc);
         } else {
             $icon.css({display: "none"});
