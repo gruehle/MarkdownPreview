@@ -45,6 +45,11 @@ define(function (require, exports, module) {
     var panelHTML       = require("text!templates/panel.html"),
         previewHTML     = require("text!templates/preview.html"),
         settingsHTML    = require("text!templates/settings.html");
+    
+    // Emojis
+    var emojiPath       = FileUtils.getNativeModuleDirectoryPath(module) + "/emojis/";
+    var emojis          = require("text!emojis/emojis.json");
+    emojis = JSON.parse(emojis);
 
     // Local modules
     var marked          = require("lib/marked");
@@ -69,6 +74,7 @@ define(function (require, exports, module) {
     var _prefs = PreferencesManager.getExtensionPrefs("markdown-preview");
     _prefs.definePreference("useGFM", "boolean", false);
     _prefs.definePreference("theme", "string", "clean");
+    _prefs.definePreference("useEmojis", "boolean", false);
     _prefs.definePreference("syncScroll", "boolean", true);
 
     // (based on code in brackets.js)
@@ -89,6 +95,47 @@ define(function (require, exports, module) {
 
         // Close settings dropdown, if open
         _hideSettings();
+    }
+
+
+    function _handleGFMCheckboxClick(e) {
+        var node = e.target,
+            chbxIndex = -1;
+        if (currentDoc) {
+            if (node.tagName === "INPUT" && $(node).hasClass('gfm-checkbox')) {
+                var gfmCheckboxes = $($iframe[0].contentDocument).find('input.gfm-checkbox').each(function (idx, n) {
+                    if (node === n) {
+                        chbxIndex = idx;
+                    }
+                });
+                if (chbxIndex > -1) {
+                    var docText = currentDoc.getText(),
+                        docLines = docText.split("\n"),
+                        gfmChbxLineNrs = [],
+                        chbxChecked = node.checked,
+                        chbxLine = '',
+                        chbxPos = '',
+                        chbxCurrVal = (chbxChecked) ? ' ' : 'x',
+                        chbxNewVal = (chbxChecked) ? 'x' : ' ';
+                    docLines.map(function (line, lineNr) {
+                        if (/^\s*\-\s*\[[ xX]\]\s*/.test(line)) {
+                            gfmChbxLineNrs.push(lineNr);
+                        }
+                    });
+                    if (chbxIndex >= 0 && chbxIndex < gfmChbxLineNrs.length) {
+                        chbxLine = docLines[gfmChbxLineNrs[chbxIndex]];
+                        chbxPos = chbxLine.indexOf('[' + chbxCurrVal + ']');
+                        if (chbxPos !== -1) {
+                            chbxLine = chbxLine.substr(0, chbxPos + 1) + chbxNewVal + chbxLine.substr(chbxPos + 2);
+                            docLines[gfmChbxLineNrs[chbxIndex]] = chbxLine;
+                        }
+                    }
+                    if (chbxPos !== -1) {
+                        currentDoc.setText(docLines.join("\n"));
+                    }
+                }
+            }
+        }
     }
 
     function _calcScrollPos() {
@@ -134,6 +181,15 @@ define(function (require, exports, module) {
 
             // Convert protocol-relative URLS
             bodyText = bodyText.replace(/src="\/\//g, "src=\"http://");
+            
+            // Convert Text To Emojis if enabled
+            if (_prefs.get("useEmojis")) {
+                var emoji;
+                for (emoji in emojis) {
+                    var regexEmoji = new RegExp("\\\:(" + emoji + ")\\\:", 'g');
+                    bodyText = bodyText.replace(regexEmoji, "<img src=\"" + emojiPath + emoji + ".png\" alt=\"" + emoji + "\" class=\"emoji\">");
+                }
+            }
 
             if (isReload) {
                 $iframe[0].contentDocument.body.innerHTML = bodyText;
@@ -156,6 +212,7 @@ define(function (require, exports, module) {
                     // Open external browser when links are clicked
                     // (similar to what brackets.js does - but attached to the iframe's document)
                     $iframe[0].contentDocument.body.addEventListener("click", _handleLinkClick, true);
+                    $iframe[0].contentDocument.body.addEventListener("click", _handleGFMCheckboxClick, true);
 
                     // Sync scroll position (if needed)
                     if (!isReload) {
@@ -183,7 +240,19 @@ define(function (require, exports, module) {
     function _updateSettings() {
         // Format
         var useGFM = _prefs.get("useGFM");
+
+        var renderer = new marked.Renderer();
+        renderer.listitem = function (text) {
+            if (/^\[ \] */.test(text)) {
+                text = '<input type="checkbox" class="gfm-checkbox"> ' + text.substr(4);
+            } else if (/^\[[xX]\] */.test(text)) {
+                text = '<input type="checkbox" checked="checked" class="gfm-checkbox"> ' + text.substr(4);
+            }
+            return '<li>' + text + '</li>\n';
+        };
+
         marked.setOptions({
+            renderer: renderer,
             breaks: useGFM,
             gfm: useGFM
         });
@@ -241,6 +310,17 @@ define(function (require, exports, module) {
 
         if (_prefs.get("syncScroll")) {
             $syncScroll.attr("checked", true);
+        }
+
+        var $useEmojis = $settings.find("#markdown-preview-use-emojis");
+
+        $useEmojis.change(function (e) {
+            _prefs.set("useEmojis", e.target.checked);
+            _updateSettings();
+        });
+
+        if (_prefs.get("useEmojis")) {
+            $useEmojis.attr("checked", true);
         }
 
         PopUpManager.addPopUp($settings, _hideSettings, true);
@@ -301,7 +381,7 @@ define(function (require, exports, module) {
             currentEditor = null;
         }
 
-        if (doc && /md|markdown|litcoffee|txt/.test(ext)) {
+        if (doc && /md|mkd|markdown|litcoffee|txt/.test(ext)) {
             currentDoc = doc;
             currentDoc.on("change", _documentChange);
             currentEditor = EditorManager.getCurrentFullEditor();
@@ -309,6 +389,7 @@ define(function (require, exports, module) {
             $icon.css({display: "block"});
             _setPanelVisibility(visible);
             toggleCmd.setEnabled(true);
+            _updateSettings();
             _loadDoc(doc);
         } else {
             $icon.css({display: "none"});
