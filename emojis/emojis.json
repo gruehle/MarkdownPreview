@@ -97,6 +97,7 @@
     "plus1": ["thumbsup", "yes", "awesome", "good", "agree", "accept", "cool", "hand", "like"],
     "thumbsup": ["like"],
     "-1": ["thumbsdown", "no", "dislike", "hand"],
+    "+1": ["thumbsup", "yes", "like", "hand"],
     "thumbsdown": ["dislike"],
     "ok_hand": ["fingers", "limbs", "perfect"],
     "punch": ["pound"],
