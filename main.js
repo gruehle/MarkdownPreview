@@ -381,7 +381,7 @@ define(function (require, exports, module) {
             currentEditor = null;
         }
 
-        if (doc && /md|markdown|litcoffee|txt/.test(ext)) {
+        if (doc && /md|mkd|markdown|litcoffee|txt/.test(ext)) {
             currentDoc = doc;
             currentDoc.on("change", _documentChange);
             currentEditor = EditorManager.getCurrentFullEditor();
