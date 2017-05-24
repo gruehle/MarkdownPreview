@@ -61,6 +61,7 @@ define(function (require, exports, module) {
         currentEditor,
         panel,
         viewMenu,
+        previewShortcut = { key : "Ctrl-Alt-M" },
         toggleCmd,
         visible = false,
         realVisibility = false;
@@ -350,9 +351,9 @@ define(function (require, exports, module) {
     MainViewManager.on("currentFileChange", _currentDocChangedHandler);
 
     viewMenu = Menus.getMenu(Menus.AppMenuBar.VIEW_MENU);
-    toggleCmd = CommandManager.register("Markdown Preview", "toggleMarkdownPreview", _toggleVisibility);
+    toggleCmd = CommandManager.register("Markdown Preview", "gruehle.view.toggleMarkdownPreview", _toggleVisibility);
 
-    viewMenu.addMenuItem(toggleCmd);
+    viewMenu.addMenuItem(toggleCmd, previewShortcut);
 
     toggleCmd.setChecked(realVisibility);
     toggleCmd.setEnabled(realVisibility);
